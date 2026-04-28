@@ -1,7 +1,12 @@
-import React from 'react';
-import { Search, Bookmark, Clock } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Bookmark, Clock, Bot, User, Loader } from 'lucide-react';
 
-const AIChat = () => {
+const AIChat = ({ user, initialQuery, setInitialQuery }) => {
+  const [messages, setMessages] = useState([]);
+  const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const scrollRef = useRef(null);
+
   const recentQueries = [
     { title: 'Latency spike in Victoria Island', time: '5 min ago' },
     { title: 'Backhaul congestion analysis', time: '1 hour ago' },
@@ -18,6 +23,49 @@ const AIChat = () => {
     "Show congested cells in Ikeja",
     "Any tower failures in last 24h?"
   ];
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isTyping]);
+
+  // Handle incoming query from the Map
+  useEffect(() => {
+    if (initialQuery) {
+      handleSend(initialQuery);
+      setInitialQuery(null);
+    }
+  }, [initialQuery]);
+
+  const handleSend = (text) => {
+    if (!text.trim()) return;
+
+    const userMsg = { role: 'user', content: text };
+    setMessages(prev => [...prev, userMsg]);
+    setInputValue('');
+    setIsTyping(true);
+
+    // Simulate AI analysis delay
+    setTimeout(() => {
+      let aiResponse = "";
+      
+      // Basic mock logic based on the query contents
+      if (text.includes('FAILED')) {
+        aiResponse = "Based on historical telemetry and current error logs, this tower experienced a sudden loss of grid power followed by a generator fail-to-start event at 04:12 AM. The site is completely down. A field maintenance team (Team Alpha) has been dispatched and is estimated to arrive in 25 minutes.";
+      } else if (text.includes('DEGRADED')) {
+        aiResponse = "This tower is currently reporting 'Degraded' status. Analysis of the past 24 hours shows a 45% increase in packet loss on the microwave backhaul link during peak hours. This is likely due to signal interference. An automated ticket has been created for the transmission team to investigate the link alignment.";
+      } else if (text.includes('HEALTHY')) {
+        aiResponse = "This tower is operating optimally. All KPIs (latency, throughput, and power stability) are well within the normal baseline parameters for the past 7 days. No anomalies detected.";
+      } else {
+        aiResponse = "I am analyzing the network metrics for your query. Currently, overall regional latency is stable at 12ms. Would you like me to run a deep-dive diagnostic on a specific cell sector?";
+      }
+
+      setMessages(prev => [...prev, { role: 'ai', content: aiResponse }]);
+      setIsTyping(false);
+    }, 2500);
+  };
 
   return (
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: '#0d1117', minHeight: 0 }}>
@@ -63,58 +111,130 @@ const AIChat = () => {
         alignItems: 'center', justifyContent: 'center',
         padding: '2rem', background: '#0d1117',
       }}>
-        <div style={{ maxWidth: 720, width: '100%', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 42, fontWeight: 800, marginBottom: 12 }}>Network Intelligence</h2>
-          <p style={{ color: '#8b949e', fontSize: 17, marginBottom: 36 }}>
-            Ask about network issues, performance, and infrastructure status
-          </p>
+        {messages.length === 0 ? (
+          <div style={{ maxWidth: 720, width: '100%', textAlign: 'center' }}>
+            <h2 style={{ fontSize: 42, fontWeight: 800, marginBottom: 12 }}>Network Intelligence</h2>
+            <p style={{ color: '#8b949e', fontSize: 17, marginBottom: 36 }}>
+              Ask about network issues, performance, and infrastructure status
+            </p>
 
-          <div style={{ position: 'relative', marginBottom: 28 }}>
-            <div style={{
-              position: 'absolute', top: '50%', left: 20,
-              transform: 'translateY(-50%)', pointerEvents: 'none',
-            }}>
-              <Search size={22} color="#8b949e" />
-            </div>
-            <input
-              type="text"
-              placeholder="Ask about network issues... e.g. Why is Lagos West slow?"
-              style={{
-                width: '100%', background: '#161b22',
-                border: '1px solid #30363d', borderRadius: 16,
-                padding: '22px 20px 22px 56px', fontSize: 16,
-                color: '#f0f6fc', outline: 'none', boxSizing: 'border-box',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-              }}
-              onFocus={e => e.target.style.borderColor = '#3b82f6'}
-              onBlur={e => e.target.style.borderColor = '#30363d'}
-            />
-          </div>
-
-          <div style={{ marginBottom: 12, fontSize: 13, color: '#8b949e', fontWeight: 600 }}>
-            Suggested queries:
-          </div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {suggestedQueries.map((q, i) => (
-              <button
-                key={i}
+            <div style={{ position: 'relative', marginBottom: 28 }}>
+              <div style={{
+                position: 'absolute', top: '50%', left: 20,
+                transform: 'translateY(-50%)', pointerEvents: 'none',
+              }}>
+                <Search size={22} color="#8b949e" />
+              </div>
+              <input
+                type="text"
+                value={inputValue}
+                onChange={e => setInputValue(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSend(inputValue)}
+                placeholder="Ask about network issues... e.g. Why is Lagos West slow?"
                 style={{
-                  padding: '10px 20px',
-                  background: '#161b22',
-                  border: '1px solid #30363d',
-                  borderRadius: 999,
-                  fontSize: 13, fontWeight: 600,
-                  color: '#3b82f6', cursor: 'pointer',
-                  transition: 'all 0.15s',
+                  width: '100%', background: '#161b22',
+                  border: '1px solid #30363d', borderRadius: 16,
+                  padding: '22px 20px 22px 56px', fontSize: 16,
+                  color: '#f0f6fc', outline: 'none', boxSizing: 'border-box',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#1c2128'; e.currentTarget.style.borderColor = '#3b82f6'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#161b22'; e.currentTarget.style.borderColor = '#30363d'; }}
-              >
-                {q}
-              </button>
-            ))}
+                onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                onBlur={e => e.target.style.borderColor = '#30363d'}
+              />
+            </div>
+
+            <div style={{ marginBottom: 12, fontSize: 13, color: '#8b949e', fontWeight: 600 }}>
+              Suggested queries:
+            </div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {suggestedQueries.map((q, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSend(q)}
+                  style={{
+                    padding: '10px 20px',
+                    background: '#161b22',
+                    border: '1px solid #30363d',
+                    borderRadius: 999,
+                    fontSize: 13, fontWeight: 600,
+                    color: '#3b82f6', cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#1c2128'; e.currentTarget.style.borderColor = '#3b82f6'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#161b22'; e.currentTarget.style.borderColor = '#30363d'; }}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ width: '100%', maxWidth: 800, height: '100%', display: 'flex', flexDirection: 'column' }}>
+            
+            {/* Chat Messages */}
+            <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '2rem 1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {messages.map((msg, i) => (
+                <div key={i} style={{ display: 'flex', gap: '1rem', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row' }}>
+                  <div style={{ 
+                    width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                    background: msg.role === 'user' ? '#1c2128' : 'rgba(59, 130, 246, 0.15)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: `1px solid ${msg.role === 'user' ? '#30363d' : 'rgba(59, 130, 246, 0.3)'}`
+                  }}>
+                    {msg.role === 'user' ? <User size={18} color="#8b949e" /> : <Bot size={18} color="#3b82f6" />}
+                  </div>
+                  <div style={{ 
+                    background: msg.role === 'user' ? '#161b22' : 'transparent',
+                    border: msg.role === 'user' ? '1px solid #30363d' : 'none',
+                    padding: msg.role === 'user' ? '12px 16px' : '6px 0',
+                    borderRadius: msg.role === 'user' ? '16px 4px 16px 16px' : '0',
+                    color: '#c9d1d9', fontSize: 15, lineHeight: 1.6, maxWidth: '85%'
+                  }}>
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              
+              {isTyping && (
+                <div style={{ display: 'flex', gap: '1rem', flexDirection: 'row' }}>
+                  <div style={{ 
+                    width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                    background: 'rgba(59, 130, 246, 0.15)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '1px solid rgba(59, 130, 246, 0.3)'
+                  }}>
+                    <Bot size={18} color="#3b82f6" />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 0', color: '#8b949e', fontSize: 14 }}>
+                    <Loader size={16} className="animate-spin" />
+                    Analyzing network telemetry...
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Chat Input Area */}
+            <div style={{ padding: '1.5rem', background: '#0d1117', borderTop: '1px solid #30363d' }}>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={e => setInputValue(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSend(inputValue)}
+                  placeholder="Ask a follow up question..."
+                  style={{
+                    width: '100%', background: '#161b22',
+                    border: '1px solid #30363d', borderRadius: 12,
+                    padding: '16px 20px', fontSize: 15,
+                    color: '#f0f6fc', outline: 'none', boxSizing: 'border-box',
+                  }}
+                  onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                  onBlur={e => e.target.style.borderColor = '#30363d'}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

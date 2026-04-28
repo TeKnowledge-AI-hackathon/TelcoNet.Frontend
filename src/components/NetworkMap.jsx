@@ -1,17 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const towers = [
-  { id: 'T1', status: 'healthy', x: 72, y: 37 },
-  { id: 'T2', status: 'degraded', x: 23, y: 48 },
-  { id: 'T3', status: 'degraded', x: 40, y: 53 },
-  { id: 'T4', status: 'failed', x: 30, y: 64 },
-  { id: 'T5', status: 'healthy', x: 55, y: 44 },
-  { id: 'T6', status: 'degraded', x: 53, y: 50 },
-  { id: 'T7', status: 'healthy', x: 63, y: 69 },
-  { id: 'T8', status: 'healthy', x: 75, y: 74 },
-  { id: 'T9', status: 'healthy', x: 87, y: 39 },
-  { id: 'T10', status: 'healthy', x: 93, y: 35 },
-  { id: 'T11', status: 'degraded', x: 46, y: 74 },
+  { id: 'Lagos-VI', status: 'healthy', lat: 6.4281, lng: 3.4219, street: 'Adeola Odeku St', lga: 'Eti-Osa' },
+  { id: 'Lagos-Ikeja', status: 'degraded', lat: 6.6018, lng: 3.3515, street: 'Oba Akran Ave', lga: 'Ikeja' },
+  { id: 'Lagos-Lekki', status: 'healthy', lat: 6.4698, lng: 3.5852, street: 'Admiralty Way', lga: 'Eti-Osa' },
+  { id: 'Abuja-Central', status: 'healthy', lat: 9.0579, lng: 7.4951, street: 'Herbert Macaulay Way', lga: 'Abuja Municipal' },
+  { id: 'Abuja-Garki', status: 'failed', lat: 9.0280, lng: 7.4786, street: 'Ahmadu Bello Way', lga: 'Abuja Municipal' },
+  { id: 'PortHarcourt', status: 'healthy', lat: 4.8156, lng: 7.0498, street: 'Aba Road', lga: 'Port Harcourt' },
+  { id: 'Kano-City', status: 'degraded', lat: 12.0022, lng: 8.5920, street: 'Zoo Road', lga: 'Kano Municipal' },
+  { id: 'Ibadan', status: 'healthy', lat: 7.3775, lng: 3.9470, street: 'Ring Road', lga: 'Ibadan South West' },
+  { id: 'Enugu', status: 'healthy', lat: 6.4584, lng: 7.5464, street: 'Ogui Road', lga: 'Enugu North' },
+  { id: 'Kaduna', status: 'degraded', lat: 10.5105, lng: 7.4165, street: 'Ahmadu Bello Way', lga: 'Kaduna North' },
+  { id: 'Benin-City', status: 'healthy', lat: 6.3350, lng: 5.6275, street: 'Akpakpava Road', lga: 'Oredo' },
 ];
 
 const statusColor = {
@@ -20,19 +20,121 @@ const statusColor = {
   failed: '#f85149',
 };
 
-const NetworkMap = () => {
+const NetworkMap = ({ setAiQuery, setCurrentView }) => {
   const [timeRange, setTimeRange] = useState('24h');
-  const [hoveredTower, setHoveredTower] = useState(null);
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
 
   const timeRanges = ['1h', '24h', '7d'];
+
+  useEffect(() => {
+    // Leaflet must be loaded globally from CDN in index.html
+    if (!window.L || mapInstanceRef.current) return;
+
+    // Initialize map centered on Nigeria and locked to its bounds
+    const nigeriaBounds = [
+      [3.0, 2.0],  // Southwest coordinates
+      [15.0, 15.0] // Northeast coordinates
+    ];
+
+    const map = window.L.map(mapRef.current, {
+      zoomControl: false,
+      maxBounds: nigeriaBounds,
+      maxBoundsViscosity: 1.0,
+      minZoom: 6
+    }).setView([9.0820, 8.6753], 6);
+
+    window.L.control.zoom({
+      position: 'bottomright'
+    }).addTo(map);
+
+    // Standard light map tiles (OpenStreetMap)
+    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    }).addTo(map);
+
+    mapInstanceRef.current = map;
+
+    // Add CSS for pulse animation if not exists
+    if (!document.getElementById('map-pulse-style')) {
+      const style = document.createElement('style');
+      style.id = 'map-pulse-style';
+      style.innerHTML = `
+        @keyframes mapPulse {
+          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.7); }
+          70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(248, 81, 73, 0); }
+          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    towers.forEach(tower => {
+      const color = statusColor[tower.status];
+      const isFailed = tower.status === 'failed';
+      
+      const html = `
+        <div style="
+          width: 24px; height: 24px; border-radius: 50%;
+          background: ${color}33; display: flex; align-items: center; justify-content: center;
+          ${isFailed ? 'animation: mapPulse 1.5s infinite;' : ''}
+        ">
+          <div style="
+            width: 10px; height: 10px; border-radius: 50%;
+            background: ${color}; box-shadow: 0 0 8px ${color};
+          "></div>
+        </div>
+      `;
+
+      const icon = window.L.divIcon({
+        html,
+        className: 'custom-tower-icon',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      const marker = window.L.marker([tower.lat, tower.lng], { icon }).addTo(map);
+
+      // Add tooltip
+      marker.bindTooltip(`
+        <div style="background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px; color: #fff; min-width: 180px;">
+          <div style="font-weight: 800; margin-bottom: 6px; font-family: inherit; font-size: 14px;">${tower.id}</div>
+          <div style="color: #8b949e; font-size: 11px; margin-bottom: 2px;">${tower.street}</div>
+          <div style="color: #8b949e; font-size: 11px; margin-bottom: 8px;">LGA: ${tower.lga}</div>
+          <div style="color: ${color}; font-weight: 700; text-transform: capitalize; font-size: 12px; display: flex; align-items: center; gap: 6px; padding-top: 8px; border-top: 1px solid #30363d;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color}; box-shadow: 0 0 6px ${color};"></div>
+            Status: ${tower.status}
+          </div>
+          <div style="color: #3b82f6; font-size: 10px; margin-top: 8px; text-align: right; font-weight: 600;">Click to analyze -></div>
+        </div>
+      `, {
+        direction: 'top',
+        className: 'custom-leaflet-tooltip',
+        offset: [0, -12]
+      });
+
+      marker.on('click', () => {
+        setAiQuery(`Analyze why tower ${tower.id} (${tower.street}, ${tower.lga}) is currently in ${tower.status.toUpperCase()} status based on historical data.`);
+        setCurrentView('AIChat');
+      });
+    });
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <div className="flex-1 flex flex-col bg-[#0d1117] min-h-screen">
       {/* Sub header */}
-      <div className="px-8 py-6 flex justify-between items-start border-b border-[#30363d]">
+      <div className="px-8 py-6 flex justify-between items-start border-b border-[#30363d] z-10 bg-[#0d1117]">
         <div>
-          <h2 className="text-2xl font-bold mb-1">Network Map - Lagos Region</h2>
-          <p className="text-[#8b949e] text-sm">Real-time infrastructure status</p>
+          <h2 className="text-2xl font-bold mb-1">Network Map - Nigeria</h2>
+          <p className="text-[#8b949e] text-sm">Real-time infrastructure status across the nation</p>
         </div>
         <div className="flex gap-1 bg-[#161b22] border border-[#30363d] rounded-xl p-1">
           {timeRanges.map(t => (
@@ -52,80 +154,39 @@ const NetworkMap = () => {
       </div>
 
       {/* Map area */}
-      <div className="flex-1 relative overflow-hidden" style={{ background: '#0d1117' }}>
-        {/* Grid lines */}
-        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
-              <path d="M 80 0 L 0 0 0 80" fill="none" stroke="#1c2128" strokeWidth="1"/>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
-        </svg>
+      <div className="flex-1 relative">
+        <div ref={mapRef} style={{ width: '100%', height: '100%', background: '#0d1117', zIndex: 0 }} />
 
-        {/* Tower dots */}
-        {towers.map(tower => (
-          <div
-            key={tower.id}
-            style={{
-              position: 'absolute',
-              left: `${tower.x}%`,
-              top: `${tower.y}%`,
-              transform: 'translate(-50%, -50%)',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={() => setHoveredTower(tower)}
-            onMouseLeave={() => setHoveredTower(null)}
-          >
-            {/* Pulse ring */}
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                background: `${statusColor[tower.status]}22`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                animation: tower.status === 'failed' ? 'pulse 1.5s infinite' : 'none',
-              }}
-            >
-              <div
-                style={{
-                  width: 14,
-                  height: 14,
-                  borderRadius: '50%',
-                  background: statusColor[tower.status],
-                  boxShadow: `0 0 10px ${statusColor[tower.status]}88`,
-                }}
-              />
-            </div>
-
-            {/* Tooltip */}
-            {hoveredTower?.id === tower.id && (
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '110%',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  background: '#161b22',
-                  border: '1px solid #30363d',
-                  borderRadius: 8,
-                  padding: '8px 12px',
-                  whiteSpace: 'nowrap',
-                  zIndex: 10,
-                  fontSize: 12,
-                }}
-              >
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>Tower {tower.id}</div>
-                <div style={{ color: statusColor[tower.status], fontWeight: 600, textTransform: 'capitalize' }}>
-                  ● {tower.status}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
+        {/* Global styling for Leaflet custom tooltip & controls */}
+        <style>{`
+          .custom-leaflet-tooltip {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+          .custom-leaflet-tooltip::before {
+            display: none !important;
+          }
+          .leaflet-control-zoom a {
+            background-color: #161b22 !important;
+            color: #8b949e !important;
+            border-color: #30363d !important;
+          }
+          .leaflet-control-zoom a:hover {
+            color: #fff !important;
+          }
+          .leaflet-container {
+            font-family: inherit !important;
+          }
+          .leaflet-control-attribution {
+            background: rgba(22, 27, 34, 0.8) !important;
+            color: #8b949e !important;
+          }
+          .leaflet-control-attribution a {
+            color: #3b82f6 !important;
+          }
+        `}</style>
 
         {/* Legend */}
         <div
@@ -137,6 +198,8 @@ const NetworkMap = () => {
             border: '1px solid #30363d',
             borderRadius: 12,
             padding: '16px 20px',
+            zIndex: 1000,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.6)'
           }}
         >
           <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 14 }}>Tower Status</div>
@@ -146,7 +209,7 @@ const NetworkMap = () => {
             { label: 'Failed', color: '#f85149' },
           ].map(s => (
             <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13 }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: s.color }} />
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: s.color, boxShadow: `0 0 6px ${s.color}` }} />
               <span style={{ color: '#8b949e' }}>{s.label}</span>
             </div>
           ))}
@@ -160,6 +223,7 @@ const NetworkMap = () => {
             right: 24,
             display: 'flex',
             gap: 12,
+            zIndex: 1000
           }}
         >
           {[
@@ -175,6 +239,8 @@ const NetworkMap = () => {
                 borderRadius: 10,
                 padding: '10px 16px',
                 textAlign: 'center',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.6)',
+                minWidth: '80px'
               }}
             >
               <div style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</div>

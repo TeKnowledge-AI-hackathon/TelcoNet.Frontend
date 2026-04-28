@@ -18,12 +18,11 @@ const Sidebar = ({ currentView, setCurrentView, onLogout, user }) => {
     menuItems.push({ id: 'Users', icon: <Server size={20} />, label: 'Users' });
   }
 
+  menuItems.push({ id: 'Settings', icon: <Settings size={20} />, label: 'Settings' });
+
   return (
     <div className="w-64 h-screen border-r border-[#30363d] flex flex-col p-4 bg-[#0d1117] sticky top-0 shrink-0">
-      <div className="flex items-center gap-2 mb-10 px-2">
-        <div className="p-2 bg-[#2dd4bf] rounded-lg glow-teal">
-          <Zap size={24} className="text-black" />
-        </div>
+      <div className="flex items-center gap-3 mb-10 px-2">
         <span className="text-xl font-bold tracking-tight">TelcoNet <span className="text-[#2dd4bf]">NOC</span></span>
       </div>
 

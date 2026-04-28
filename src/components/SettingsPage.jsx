@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Settings as SettingsIcon, Bell, Shield, Database, Palette, Save } from 'lucide-react';
+import { THEMES, applyTheme } from '../themeUtils';
 
 const Section = ({ icon, title, children }) => (
   <div className="card">
@@ -53,10 +54,12 @@ const Field = ({ label, defaultValue, type = 'text' }) => (
 
 const Settings = () => {
   const [saved, setSaved] = useState(false);
+  const [activeTheme, setActiveTheme] = useState(0);
 
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+    applyTheme(activeTheme);
   };
 
   return (
@@ -123,22 +126,20 @@ const Settings = () => {
         <div style={{ gridColumn: '1 / -1' }}>
           <Section icon={<Palette size={20} />} title="Appearance">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-              {[
-                { name: 'Dark (Default)', bg: '#0d1117', accent: '#3b82f6', active: true },
-                { name: 'Midnight', bg: '#020617', accent: '#8b5cf6', active: false },
-                { name: 'Slate', bg: '#0f172a', accent: '#2dd4bf', active: false },
-                { name: 'Carbon', bg: '#161616', accent: '#f59e0b', active: false },
-              ].map((theme, i) => (
-                <div key={i} style={{
-                  padding: '1rem', borderRadius: 12, cursor: 'pointer',
-                  background: theme.bg, border: `2px solid ${theme.active ? theme.accent : '#30363d'}`,
-                  transition: 'border-color 0.2s',
-                }}>
-                  <div style={{ width: '100%', height: 48, borderRadius: 8, background: theme.accent, opacity: 0.3, marginBottom: 12 }}/>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f6fc' }}>{theme.name}</div>
-                  {theme.active && <div style={{ fontSize: 11, color: theme.accent, marginTop: 4, fontWeight: 600 }}>● Active</div>}
-                </div>
-              ))}
+              {THEMES.map((theme, i) => {
+                const isActive = activeTheme === i;
+                return (
+                  <div key={i} onClick={() => setActiveTheme(i)} style={{
+                    padding: '1rem', borderRadius: 12, cursor: 'pointer',
+                    background: theme.bg, border: `2px solid ${isActive ? theme.accent : '#30363d'}`,
+                    transition: 'border-color 0.2s',
+                  }}>
+                    <div style={{ width: '100%', height: 48, borderRadius: 8, background: theme.accent, opacity: 0.3, marginBottom: 12 }}/>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#f0f6fc' }}>{theme.name}</div>
+                    {isActive && <div style={{ fontSize: 11, color: theme.accent, marginTop: 4, fontWeight: 600 }}>● Active</div>}
+                  </div>
+                );
+              })}
             </div>
           </Section>
         </div>

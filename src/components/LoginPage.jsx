@@ -14,15 +14,10 @@ const LoginPage = ({ onLogin }) => {
   return (
     <div className="w-full min-h-screen bg-[#0d1117] flex flex-col items-center justify-center p-4">
       <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-8 mb-8 shadow-2xl" style={{ width: '100%', maxWidth: '400px' }}>
-        <div className="flex justify-center mb-8">
-           <div className="w-12 h-12 bg-[#2dd4bf] rounded-xl flex items-center justify-center glow-teal" style={{ background: '#2dd4bf' }}>
-             <Zap size={28} color="#000000" />
-           </div>
-        </div>
-        
+
         <h2 className="text-2xl font-bold text-center mb-8">Sign in to TelcoNet</h2>
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div className="flex flex-col gap-6 mb-6">
           <input 
             type="email" 
             placeholder="email@example.com"
