@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Zap } from 'lucide-react';
 
 const LoginPage = ({ onLogin }) => {
   const [email, setEmail] = useState('');
@@ -14,14 +15,14 @@ const LoginPage = ({ onLogin }) => {
     <div className="w-full min-h-screen bg-[#0d1117] flex flex-col items-center justify-center p-4">
       <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-8 mb-8 shadow-2xl" style={{ width: '100%', maxWidth: '400px' }}>
         <div className="flex justify-center mb-8">
-           <div className="w-12 h-12 bg-[#3b82f6] rounded-xl flex items-center justify-center glow-blue">
-             <span className="text-2xl">⚡</span>
+           <div className="w-12 h-12 bg-[#2dd4bf] rounded-xl flex items-center justify-center glow-teal" style={{ background: '#2dd4bf' }}>
+             <Zap size={28} color="#000000" />
            </div>
         </div>
         
         <h2 className="text-2xl font-bold text-center mb-8">Sign in to TelcoNet</h2>
         
-        <div className="space-y-4 mb-6">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
           <input 
             type="email" 
             placeholder="email@example.com"
@@ -52,7 +53,7 @@ const LoginPage = ({ onLogin }) => {
 
       <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-6" style={{ width: '100%', maxWidth: '400px' }}>
         <p className="text-[#8b949e] text-sm mb-4 font-medium">Demo Accounts</p>
-        <div className="space-y-3">
+        <div className="space-y-3" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {demoUsers.map((user, i) => (
             <div 
               key={i}
