@@ -60,7 +60,7 @@ const TopNav = ({ currentView, setCurrentView, onLogout, user }) => {
         const ONE_MINUTE = 60 * 1000;
         if (now - lastShakeRef.current >= ONE_MINUTE) {
           setIsRinging(true);
-          setTimeout(() => setIsRinging(false), 3000);
+          setTimeout(() => setIsRinging(false), 10000); // Shake for 10 seconds
           lastShakeRef.current = now;
         }
       }
