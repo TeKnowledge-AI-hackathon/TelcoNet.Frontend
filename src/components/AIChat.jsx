@@ -2,6 +2,113 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Bookmark, Clock, Bot, User, Loader } from 'lucide-react';
 import { copilotService } from '../api/copilotService';
 
+const FormattedMessage = ({ content }) => {
+  if (!content) return null;
+  
+  const lines = content.split('\n');
+  
+  const parseInline = (text) => {
+    // Handle bold: **text**
+    // regex to find **...**
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return (
+          <span key={i} style={{ 
+            color: '#3b82f6', 
+            fontWeight: 800,
+            textShadow: '0 0 8px rgba(59, 130, 246, 0.3)'
+          }}>
+            {part.slice(2, -2)}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      {lines.map((line, i) => {
+        const trimmed = line.trim();
+        if (!trimmed && line === '') return <div key={i} style={{ height: '0.5rem' }} />;
+
+        // Header: ###
+        if (trimmed.startsWith('###')) {
+          const level = trimmed.match(/^#+/)[0].length;
+          const text = trimmed.replace(/^#+\s*/, '');
+          return (
+            <div key={i} style={{ 
+              marginTop: i === 0 ? '0' : '1.25rem',
+              marginBottom: '0.5rem',
+              paddingBottom: '4px',
+              borderBottom: '1px solid #30363d'
+            }}>
+              <span style={{ 
+                fontSize: level === 3 ? '1.15rem' : '1.05rem',
+                fontWeight: 800,
+                color: '#f0f6fc',
+                letterSpacing: '-0.01em',
+                display: 'block'
+              }}>
+                {parseInline(text)}
+              </span>
+            </div>
+          );
+        }
+
+        // List item: - or *
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+          return (
+            <div key={i} style={{ 
+              display: 'flex', 
+              gap: '12px', 
+              paddingLeft: '4px',
+              marginBottom: '4px',
+              alignItems: 'flex-start'
+            }}>
+              <div style={{ 
+                width: 6, height: 6, borderRadius: '50%', 
+                background: '#3b82f6', marginTop: 9, flexShrink: 0,
+                boxShadow: '0 0 8px rgba(59, 130, 246, 0.5)'
+              }} />
+              <div style={{ flex: 1 }}>{parseInline(trimmed.slice(2))}</div>
+            </div>
+          );
+        }
+
+        // Numbered list: 1) or 1.
+        if (/^\d+[\).]\s/.test(trimmed)) {
+          const match = trimmed.match(/^(\d+[\).])\s*(.*)/);
+          return (
+            <div key={i} style={{ 
+              display: 'flex', 
+              gap: '12px', 
+              paddingLeft: '4px',
+              marginBottom: '8px',
+              alignItems: 'flex-start'
+            }}>
+              <div style={{ 
+                color: '#3b82f6', fontWeight: 800, fontSize: '0.9rem', 
+                minWidth: '20px', marginTop: 1 
+              }}>
+                {match[1]}
+              </div>
+              <div style={{ flex: 1 }}>{parseInline(match[2])}</div>
+            </div>
+          );
+        }
+
+        return (
+          <div key={i} style={{ marginBottom: '4px' }}>
+            {parseInline(line)}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 const AIChat = ({ user, initialQuery, setInitialQuery }) => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -186,9 +293,13 @@ const AIChat = ({ user, initialQuery, setInitialQuery }) => {
                     border: msg.role === 'user' ? '1px solid #30363d' : 'none',
                     padding: msg.role === 'user' ? '12px 16px' : '6px 0',
                     borderRadius: msg.role === 'user' ? '16px 4px 16px 16px' : '0',
-                    color: '#c9d1d9', fontSize: 15, lineHeight: 1.6, maxWidth: '85%', whiteSpace: 'pre-wrap'
+                    color: '#c9d1d9', fontSize: 15, lineHeight: 1.6, maxWidth: '85%'
                   }}>
-                    {msg.content}
+                    {msg.role === 'user' ? (
+                      <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                    ) : (
+                      <FormattedMessage content={msg.content} />
+                    )}
                   </div>
                 </div>
               ))}
