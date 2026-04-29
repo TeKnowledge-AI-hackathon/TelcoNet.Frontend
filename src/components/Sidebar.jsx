@@ -15,7 +15,7 @@ const Sidebar = ({ currentView, setCurrentView, onLogout, user }) => {
     { id: 'AIChat', icon: <MessageSquare size={20} />, label: 'AI Intelligence' },
   ];
   
-  if (user && user.role !== 'viewer') {
+  if (user && user.role === 'Admin') {
     menuItems.push({ id: 'Users', icon: <Server size={20} />, label: 'Users' });
     menuItems.push({ id: 'AuditLog', icon: <Shield size={20} />, label: 'Audit Log' });
   }
