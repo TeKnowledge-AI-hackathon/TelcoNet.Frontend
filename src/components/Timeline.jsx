@@ -1,56 +1,5 @@
-import React from 'react';
-
-const events = [
-  {
-    time: '16:45',
-    title: 'Secondary backhaul activated',
-    desc: '40% of traffic rerouted to backup fiber link',
-    severity: 'resolved',
-    badge: null,
-  },
-  {
-    time: '16:30',
-    title: 'Repair team dispatched',
-    desc: 'Field engineers en route to tower LW-099',
-    severity: 'action',
-    badge: null,
-  },
-  {
-    time: '15:15',
-    title: 'High latency alert triggered',
-    desc: 'Average latency exceeded 400ms threshold in Lagos West region',
-    severity: 'high',
-    badge: 'High',
-  },
-  {
-    time: '14:45',
-    title: 'Congestion detected',
-    desc: 'Backhaul link capacity reached 92% - automatic alerts sent to NOC',
-    severity: 'warning',
-    badge: null,
-  },
-  {
-    time: '14:23',
-    title: 'Tower LW-099 offline',
-    desc: 'Power supply failure during grid outage. Backup generator failed to start.',
-    severity: 'critical',
-    badge: 'Critical',
-  },
-  {
-    time: '14:15',
-    title: 'Grid power outage detected',
-    desc: 'Brief power outage in Lagos West sector',
-    severity: 'warning',
-    badge: null,
-  },
-  {
-    time: '12:00',
-    title: 'Routine capacity check',
-    desc: 'All systems operating within normal parameters',
-    severity: 'info',
-    badge: null,
-  },
-];
+import React, { useState, useEffect } from 'react';
+import { networkService } from '../api/networkService';
 
 const severityStyles = {
   resolved: {
@@ -97,101 +46,128 @@ const badgeColors = {
 };
 
 const Timeline = () => {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTimeline = async () => {
+      try {
+        const data = await networkService.getTimeline();
+        const formatted = (data.incidents || []).map(inc => ({
+          time: inc.time,
+          title: inc.title,
+          desc: inc.description,
+          severity: inc.severity?.toLowerCase() || 'info',
+          badge: inc.severity === 'Critical' ? 'Critical' : inc.severity === 'High' ? 'High' : null
+        }));
+        setEvents(formatted);
+      } catch (err) {
+        console.error('Failed to fetch timeline:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTimeline();
+  }, []);
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#0d1117', overflowY: 'auto' }}>
       {/* Header */}
       <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid #30363d' }}>
         <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Incident Timeline</h2>
         <p style={{ color: '#8b949e', fontSize: 13 }}>
-          Chronological event log for Lagos West performance degradation
+          Chronological event log for network infrastructure changes
         </p>
       </div>
 
-      {/* Timeline */}
-      <div style={{ padding: '2rem', flex: 1 }}>
-        <div style={{ position: 'relative', maxWidth: 900 }}>
-          {/* Vertical line */}
-          <div style={{
-            position: 'absolute',
-            left: 52,
-            top: 0,
-            bottom: 0,
-            width: 2,
-            background: '#30363d',
-          }} />
+      {loading ? (
+        <div style={{ padding: '4rem', textAlign: 'center', color: '#8b949e' }}>Loading timeline events...</div>
+      ) : (
+        <div style={{ padding: '2rem', flex: 1 }}>
+          <div style={{ position: 'relative', maxWidth: 900 }}>
+            {/* Vertical line */}
+            <div style={{
+              position: 'absolute',
+              left: 52,
+              top: 0,
+              bottom: 0,
+              width: 2,
+              background: '#30363d',
+            }} />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {events.map((ev, i) => {
-              const s = severityStyles[ev.severity];
-              const badge = ev.badge ? badgeColors[ev.badge] : null;
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {events.map((ev, i) => {
+                const s = severityStyles[ev.severity] || severityStyles.info;
+                const badge = ev.badge ? badgeColors[ev.badge] : null;
 
-              return (
-                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '1.25rem' }}>
-                  {/* Time label */}
-                  <div style={{
-                    width: 44, flexShrink: 0,
-                    fontSize: 12, color: '#8b949e', fontWeight: 600,
-                    paddingTop: 18, textAlign: 'right',
-                  }}>
-                    {ev.time}
-                  </div>
-
-                  {/* Dot */}
-                  <div style={{
-                    flexShrink: 0, marginTop: 18,
-                    width: 14, height: 14,
-                    borderRadius: '50%',
-                    background: s.dot,
-                    boxShadow: `0 0 8px ${s.dot}88`,
-                    zIndex: 1,
-                    position: 'relative',
-                  }} />
-
-                  {/* Card */}
-                  <div style={{
-                    flex: 1,
-                    background: s.bg,
-                    border: `1px solid ${s.border}`,
-                    borderRadius: 12,
-                    padding: '1rem 1.25rem',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    transition: 'transform 0.2s',
-                    cursor: 'default',
-                  }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: s.title, marginBottom: 6 }}>
-                        {ev.title}
-                      </div>
-                      <div style={{ fontSize: 13, color: '#8b949e', lineHeight: 1.5 }}>
-                        {ev.desc}
-                      </div>
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '1.25rem' }}>
+                    {/* Time label */}
+                    <div style={{
+                      width: 44, flexShrink: 0,
+                      fontSize: 12, color: '#8b949e', fontWeight: 600,
+                      paddingTop: 18, textAlign: 'right',
+                    }}>
+                      {ev.time}
                     </div>
-                    {badge && (
-                      <span style={{
-                        flexShrink: 0,
-                        marginLeft: 16,
-                        padding: '3px 10px',
-                        borderRadius: 6,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        letterSpacing: '0.05em',
-                        textTransform: 'capitalize',
-                        background: badge.bg,
-                        color: badge.color,
-                        border: `1px solid ${badge.border}`,
-                      }}>
-                        {ev.badge}
-                      </span>
-                    )}
+
+                    {/* Dot */}
+                    <div style={{
+                      flexShrink: 0, marginTop: 18,
+                      width: 14, height: 14,
+                      borderRadius: '50%',
+                      background: s.dot,
+                      boxShadow: `0 0 8px ${s.dot}88`,
+                      zIndex: 1,
+                      position: 'relative',
+                    }} />
+
+                    {/* Card */}
+                    <div style={{
+                      flex: 1,
+                      background: s.bg,
+                      border: `1px solid ${s.border}`,
+                      borderRadius: 12,
+                      padding: '1rem 1.25rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      transition: 'transform 0.2s',
+                      cursor: 'default',
+                    }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: s.title, marginBottom: 6 }}>
+                          {ev.title}
+                        </div>
+                        <div style={{ fontSize: 13, color: '#8b949e', lineHeight: 1.5 }}>
+                          {ev.desc}
+                        </div>
+                      </div>
+                      {badge && (
+                        <span style={{
+                          flexShrink: 0,
+                          marginLeft: 16,
+                          padding: '3px 10px',
+                          borderRadius: 6,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          letterSpacing: '0.05em',
+                          textTransform: 'capitalize',
+                          background: badge.bg,
+                          color: badge.color,
+                          border: `1px solid ${badge.border}`,
+                        }}>
+                          {ev.badge}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Bottom summary stats */}
       <div style={{

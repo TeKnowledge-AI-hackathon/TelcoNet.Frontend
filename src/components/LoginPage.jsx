@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Zap } from 'lucide-react';
+import { authService } from '../api/authService';
 
 const LoginPage = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const demoUsers = [
     { name: 'Admin User', email: 'admin@noc.com', role: 'admin', color: 'text-purple-400 bg-purple-400' },
@@ -11,12 +13,31 @@ const LoginPage = ({ onLogin }) => {
     { name: 'Read-Only Viewer', email: 'viewer@noc.com', role: 'viewer', color: 'text-gray-400 bg-gray-400' },
   ];
 
+  const handleLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const data = await authService.login({ email, password });
+      onLogin(data.user);
+    } catch (err) {
+      setError(err.message || 'Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="w-full min-h-screen bg-[#0d1117] flex flex-col items-center justify-center p-4">
       <div className="bg-[#161b22] border border-[#30363d] rounded-2xl p-8 mb-8 shadow-2xl" style={{ width: '100%', maxWidth: '400px' }}>
 
         <h2 className="text-2xl font-bold text-center mb-8">Sign in to TelcoNet</h2>
         
+        {error && (
+          <div className="bg-red-900/20 border border-red-500/50 text-red-400 p-3 rounded-xl mb-6 text-sm text-center">
+            {error}
+          </div>
+        )}
+
         <div className="flex flex-col gap-6 mb-6">
           <input 
             type="email" 
@@ -35,14 +56,11 @@ const LoginPage = ({ onLogin }) => {
         </div>
         
         <button 
-          onClick={() => {
-            const foundUser = demoUsers.find(u => u.email === email);
-            const loggedInUser = foundUser || { name: 'Admin User', email: 'admin@noc.com', role: 'admin' };
-            onLogin(loggedInUser);
-          }}
-          className="w-full bg-[#3b82f6] text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-600 transition-all shadow-lg shadow-blue-900/20 active:scale-[0.98]"
+          onClick={handleLogin}
+          disabled={loading}
+          className="w-full bg-[#3b82f6] text-white py-4 rounded-xl font-bold text-lg hover:bg-blue-600 transition-all shadow-lg shadow-blue-900/20 active:scale-[0.98] disabled:opacity-50"
         >
-          Sign In
+          {loading ? 'Signing In...' : 'Sign In'}
         </button>
       </div>
 

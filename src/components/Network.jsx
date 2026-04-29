@@ -1,35 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Activity, Wifi, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-
-const trafficData = [
-  { time: '00:00', in: 320, out: 180 },
-  { time: '04:00', time2: '04:00', in: 210, out: 120 },
-  { time: '08:00', in: 780, out: 450 },
-  { time: '12:00', in: 1200, out: 680 },
-  { time: '16:00', in: 980, out: 540 },
-  { time: '20:00', in: 650, out: 380 },
-  { time: '23:59', in: 420, out: 220 },
-];
-
-const packetData = [
-  { time: '00:00', loss: 0.1 },
-  { time: '04:00', loss: 0.05 },
-  { time: '08:00', loss: 0.8 },
-  { time: '12:00', loss: 2.1 },
-  { time: '16:00', loss: 3.2 },
-  { time: '20:00', loss: 1.4 },
-  { time: '23:59', loss: 0.6 },
-];
-
-const interfaces = [
-  { name: 'GE0/0/0', description: 'WAN Uplink', speed: '1 Gbps', in: '450 Mbps', out: '210 Mbps', status: 'up' },
-  { name: 'GE0/0/1', description: 'Core Switch Link', speed: '10 Gbps', in: '3.2 Gbps', out: '1.8 Gbps', status: 'up' },
-  { name: 'GE0/0/2', description: 'Backup Fiber', speed: '1 Gbps', in: '0 Mbps', out: '0 Mbps', status: 'standby' },
-  { name: 'GE0/0/3', description: 'Server Farm', speed: '10 Gbps', in: '1.1 Gbps', out: '980 Mbps', status: 'up' },
-  { name: 'GE0/0/4', description: 'DMZ Segment', speed: '1 Gbps', in: '78 Mbps', out: '34 Mbps', status: 'up' },
-  { name: 'GE0/0/5', description: 'Lagos West Ring', speed: '1 Gbps', in: '0 Mbps', out: '0 Mbps', status: 'down' },
-];
+import { dashboardService } from '../api/dashboardService';
 
 const statusStyle = {
   up:      { color: '#10b981', label: 'Up' },
@@ -55,6 +27,43 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 const Network = () => {
   const [refreshed, setRefreshed] = useState(false);
+  const [kpis, setKpis] = useState(null);
+  const [trafficData, setTrafficData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    try {
+      const [kpiRes, trafficRes] = await Promise.all([
+        dashboardService.getKpis(),
+        dashboardService.getThroughputChart()
+      ]);
+      setKpis(kpiRes);
+      setTrafficData(trafficRes);
+    } catch (err) {
+      console.error('Failed to fetch network data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleRefresh = async () => {
+    setRefreshed(true);
+    await fetchData();
+    setTimeout(() => setRefreshed(false), 1000);
+  };
+
+  const interfaces = [
+    { name: 'GE0/0/0', description: 'WAN Uplink', speed: '1 Gbps', in: '450 Mbps', out: '210 Mbps', status: 'up' },
+    { name: 'GE0/0/1', description: 'Core Switch Link', speed: '10 Gbps', in: '3.2 Gbps', out: '1.8 Gbps', status: 'up' },
+    { name: 'GE0/0/2', description: 'Backup Fiber', speed: '1 Gbps', in: '0 Mbps', out: '0 Mbps', status: 'standby' },
+    { name: 'GE0/0/3', description: 'Server Farm', speed: '10 Gbps', in: '1.1 Gbps', out: '980 Mbps', status: 'up' },
+    { name: 'GE0/0/4', description: 'DMZ Segment', speed: '1 Gbps', in: '78 Mbps', out: '34 Mbps', status: 'up' },
+    { name: 'GE0/0/5', description: 'Lagos West Ring', speed: '1 Gbps', in: '0 Mbps', out: '0 Mbps', status: 'down' },
+  ];
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#0d1117', overflowY: 'auto' }}>
@@ -68,7 +77,7 @@ const Network = () => {
           <p style={{ color: '#8b949e', fontSize: 13 }}>Live interface statistics and traffic analysis</p>
         </div>
         <button
-          onClick={() => { setRefreshed(true); setTimeout(() => setRefreshed(false), 1000); }}
+          onClick={handleRefresh}
           style={{
             display: 'flex', alignItems: 'center', gap: 8,
             padding: '0.5rem 1rem', background: '#161b22',
@@ -85,10 +94,10 @@ const Network = () => {
         {/* KPI row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
           {[
-            { label: 'Total Bandwidth', value: '11.2 Gbps', icon: <Wifi size={20} />, color: '#3b82f6' },
+            { label: 'Total Bandwidth', value: `${kpis?.avgBandwidth || 0} Gbps`, icon: <Wifi size={20} />, color: '#3b82f6' },
             { label: 'Traffic In', value: '6.8 Gbps', icon: <ArrowDown size={20} />, color: '#10b981' },
             { label: 'Traffic Out', value: '3.9 Gbps', icon: <ArrowUp size={20} />, color: '#2dd4bf' },
-            { label: 'Packet Loss', value: '3.2 %', icon: <Activity size={20} />, color: '#f59e0b' },
+            { label: 'Packet Loss', value: `${kpis?.packetLoss?.value || 0} %`, icon: <Activity size={20} />, color: '#f59e0b' },
           ].map((k, i) => (
             <div key={i} className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -128,7 +137,7 @@ const Network = () => {
           <div className="card">
             <h3 style={{ fontWeight: 700, marginBottom: 20 }}>Packet Loss (%)</h3>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={packetData}>
+              <BarChart data={trafficData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1c2128" vertical={false}/>
                 <XAxis dataKey="time" stroke="#8b949e" fontSize={11} tickLine={false} axisLine={false}/>
                 <YAxis stroke="#8b949e" fontSize={11} tickLine={false} axisLine={false}/>

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Bookmark, Clock, Bot, User, Loader } from 'lucide-react';
+import { copilotService } from '../api/copilotService';
 
 const AIChat = ({ user, initialQuery, setInitialQuery }) => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
   const scrollRef = useRef(null);
 
   const recentQueries = [
@@ -39,7 +41,7 @@ const AIChat = ({ user, initialQuery, setInitialQuery }) => {
     }
   }, [initialQuery]);
 
-  const handleSend = (text) => {
+  const handleSend = async (text) => {
     if (!text.trim()) return;
 
     const userMsg = { role: 'user', content: text };
@@ -47,24 +49,20 @@ const AIChat = ({ user, initialQuery, setInitialQuery }) => {
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate AI analysis delay
-    setTimeout(() => {
-      let aiResponse = "";
+    try {
+      const response = await copilotService.chat(text, sessionId);
       
-      // Basic mock logic based on the query contents
-      if (text.includes('FAILED')) {
-        aiResponse = "Based on historical telemetry and current error logs, this tower experienced a sudden loss of grid power followed by a generator fail-to-start event at 04:12 AM. The site is completely down. A field maintenance team (Team Alpha) has been dispatched and is estimated to arrive in 25 minutes.";
-      } else if (text.includes('DEGRADED')) {
-        aiResponse = "This tower is currently reporting 'Degraded' status. Analysis of the past 24 hours shows a 45% increase in packet loss on the microwave backhaul link during peak hours. This is likely due to signal interference. An automated ticket has been created for the transmission team to investigate the link alignment.";
-      } else if (text.includes('HEALTHY')) {
-        aiResponse = "This tower is operating optimally. All KPIs (latency, throughput, and power stability) are well within the normal baseline parameters for the past 7 days. No anomalies detected.";
-      } else {
-        aiResponse = "I am analyzing the network metrics for your query. Currently, overall regional latency is stable at 12ms. Would you like me to run a deep-dive diagnostic on a specific cell sector?";
+      if (response.sessionId) {
+        setSessionId(response.sessionId);
       }
 
-      setMessages(prev => [...prev, { role: 'ai', content: aiResponse }]);
+      setMessages(prev => [...prev, { role: 'ai', content: response.answer || response.content || "I couldn't process that request." }]);
+    } catch (err) {
+      console.error('Chat failed:', err);
+      setMessages(prev => [...prev, { role: 'ai', content: "Sorry, I'm having trouble connecting to the network intelligence service right now." }]);
+    } finally {
       setIsTyping(false);
-    }, 2500);
+    }
   };
 
   return (

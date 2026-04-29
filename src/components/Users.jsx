@@ -1,13 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserCircle, Search, Pencil, Trash2, Plus, Shield } from 'lucide-react';
-
-const INITIAL_USERS = [
-  { id: 1, name: 'Admin User',      email: 'admin@noc.com',         role: 'Admin',    status: 'Active',   lastActive: '2 min ago' },
-  { id: 2, name: 'NOC Operator',    email: 'operator@noc.com',      role: 'Operator', status: 'Active',   lastActive: '5 min ago' },
-  { id: 3, name: 'Read-Only Viewer',email: 'viewer@noc.com',        role: 'Viewer',   status: 'Active',   lastActive: '1 hour ago' },
-  { id: 4, name: 'John Smith',      email: 'john.smith@noc.com',    role: 'Operator', status: 'Active',   lastActive: '3 hours ago' },
-  { id: 5, name: 'Sarah Johnson',   email: 'sarah.j@noc.com',       role: 'Viewer',   status: 'Inactive', lastActive: '2 days ago' },
-];
+import { userService } from '../api/userService';
 
 const ROLES = [
   {
@@ -40,9 +33,24 @@ const roleBadge = {
 };
 
 const Users = ({ user }) => {
-  const [users, setUsers]       = useState(INITIAL_USERS);
+  const [users, setUsers]       = useState([]);
+  const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState('');
   const [editingId, setEditingId] = useState(null);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await userService.getUsers();
+        setUsers(data);
+      } catch (err) {
+        console.error('Failed to fetch users:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const filtered = users.filter(u =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||

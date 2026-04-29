@@ -9,6 +9,7 @@ import Analytics from './components/Analytics';
 import NetworkMap from './components/NetworkMap';
 import Timeline from './components/Timeline';
 import { applyTheme } from './themeUtils';
+import { authService } from './api/authService';
 
 const renderView = (view, user, aiQuery, setAiQuery, setCurrentView) => {
   switch (view) {
@@ -23,13 +24,26 @@ const renderView = (view, user, aiQuery, setAiQuery, setCurrentView) => {
 };
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   const [currentView, setCurrentView] = useState('AIChat');
   const [aiQuery, setAiQuery] = useState(null);
 
   useEffect(() => {
     applyTheme(0);
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
   }, []);
+
+  const handleLogout = async () => {
+    await authService.logout();
+    setUser(null);
+    setCurrentView('AIChat');
+  };
 
   if (!user) {
     return <LoginPage onLogin={(u) => setUser(u)} />;
@@ -40,12 +54,12 @@ function App() {
       <Sidebar
         currentView={currentView}
         setCurrentView={setCurrentView}
-        onLogout={() => { setUser(null); setCurrentView('AIChat'); }}
+        onLogout={handleLogout}
         user={user}
       />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh', overflow: 'hidden' }}>
-        <TopNav currentView={currentView} setCurrentView={setCurrentView} onLogout={() => { setUser(null); setCurrentView('AIChat'); }} />
+        <TopNav currentView={currentView} setCurrentView={setCurrentView} onLogout={handleLogout} user={user} />
         {renderView(currentView, user, aiQuery, setAiQuery, setCurrentView)}
       </div>
     </div>

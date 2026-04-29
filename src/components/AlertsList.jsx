@@ -1,40 +1,5 @@
-import React from 'react';
-import { ShieldAlert, ShieldCheck, ShieldQuestion } from 'lucide-react';
-
-const alerts = [
-  {
-    id: 'AL-9283',
-    device: 'Core Router #1',
-    issue: 'High CPU Utilization',
-    severity: 'Critical',
-    time: '2 mins ago',
-    status: 'active'
-  },
-  {
-    id: 'AL-9284',
-    device: 'Switch 04 (L3)',
-    issue: 'Port flapping detected',
-    severity: 'Warning',
-    time: '15 mins ago',
-    status: 'active'
-  },
-  {
-    id: 'AL-9285',
-    device: 'Edge Gateway B',
-    issue: 'BGP session reset',
-    severity: 'Critical',
-    time: '1 hour ago',
-    status: 'resolved'
-  },
-  {
-    id: 'AL-9286',
-    device: 'Firewall Primary',
-    issue: 'New signature update',
-    severity: 'Info',
-    time: '3 hours ago',
-    status: 'resolved'
-  },
-];
+import { networkService } from '../api/networkService';
+import { useState, useEffect } from 'react';
 
 const SeverityBadge = ({ severity }) => {
   const styles = {
@@ -44,13 +9,37 @@ const SeverityBadge = ({ severity }) => {
   };
 
   return (
-    <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-opacity-10 border border-current ${styles[severity]}`}>
+    <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-opacity-10 border border-current ${styles[severity] || styles.Info}`}>
       {severity}
     </span>
   );
 };
 
 const AlertsList = () => {
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        const data = await networkService.getAlerts();
+        const formattedData = data.map(a => ({
+          id: a.id,
+          device: a.source || 'Unknown',
+          issue: a.title,
+          severity: a.severity,
+          time: new Date(a.createdAt).toLocaleTimeString(),
+          status: a.isAcknowledged ? 'resolved' : 'active'
+        }));
+        setAlerts(formattedData);
+      } catch (err) {
+        console.error('Failed to fetch alerts:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAlerts();
+  }, []);
   return (
     <div className="card flex-1">
       <div className="flex justify-between items-center mb-6">

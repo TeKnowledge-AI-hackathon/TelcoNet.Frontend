@@ -8,41 +8,45 @@ const NAV_ITEMS = [
   { id: 'Timeline',  icon: <Clock size={16} />,         label: 'Timeline' },
 ];
 
-const TopNav = ({ currentView, setCurrentView, onLogout }) => {
+import { networkService } from '../api/networkService';
+
+const TopNav = ({ currentView, setCurrentView, onLogout, user }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [isRinging, setIsRinging] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(1);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [healthStatus, setHealthStatus] = useState('Healthy');
+  const [notifications, setNotifications] = useState([]);
 
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Tower Lagos-Garki failed', time: '2 mins ago', type: 'error' },
-    { id: 2, title: 'High latency on Ikeja backhaul', time: '15 mins ago', type: 'warning' },
-    { id: 3, title: 'Maintenance scheduled for VI', time: '1 hr ago', type: 'info' },
-  ]);
+  const fetchHealthAndAlerts = async () => {
+    try {
+      const health = await networkService.getHealth();
+      setHealthStatus(health.overallStatus || 'Healthy');
 
-  // Simulate an incoming notification after a short delay
+      const alerts = await networkService.getAlerts();
+      const formattedAlerts = alerts.map(a => ({
+        id: a.id,
+        title: a.title,
+        time: new Date(a.createdAt).toLocaleTimeString(),
+        type: a.severity.toLowerCase() === 'critical' ? 'error' : a.severity.toLowerCase() === 'warning' ? 'warning' : 'info'
+      }));
+      
+      if (formattedAlerts.length > notifications.length && notifications.length > 0) {
+        setIsRinging(true);
+        setTimeout(() => setIsRinging(false), 3000);
+      }
+      
+      setNotifications(formattedAlerts);
+      setUnreadCount(formattedAlerts.filter(a => !a.isAcknowledged).length);
+    } catch (err) {
+      console.error('Failed to fetch health/alerts:', err);
+    }
+  };
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      // Play sound
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-      audio.volume = 0.5;
-      audio.play().catch(e => console.log("Audio play blocked by browser interaction policy:", e));
-
-      // Trigger shake animation
-      setIsRinging(true);
-      setUnreadCount(prev => prev + 1);
-
-      // Add new notification to list
-      setNotifications(prev => [
-        { id: Date.now(), title: 'CRITICAL: Core Router Port Harcourt unreachable', time: 'Just now', type: 'error' },
-        ...prev
-      ]);
-
-      // Stop shaking after 3 seconds
-      setTimeout(() => setIsRinging(false), 3000);
-    }, 5000); // Triggers 5 seconds after dashboard loads
-
-    return () => clearTimeout(timer);
-  }, []);
+    fetchHealthAndAlerts();
+    const interval = setInterval(fetchHealthAndAlerts, 30000); // Poll every 30s
+    return () => clearInterval(interval);
+  }, [notifications.length]);
 
   return (
     <header
@@ -102,8 +106,13 @@ const TopNav = ({ currentView, setCurrentView, onLogout }) => {
           borderRadius: '999px', border: '1px solid #30363d',
           whiteSpace: 'nowrap'
         }}>
-          <div style={{ width: 6, height: 6, background: '#10b981', borderRadius: '50%', boxShadow: '0 0 6px #10b981' }} />
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>System Healthy</span>
+          <div style={{ 
+            width: 6, height: 6, 
+            background: healthStatus === 'Healthy' ? '#10b981' : healthStatus === 'Degraded' ? '#f59e0b' : '#f85149', 
+            borderRadius: '50%', 
+            boxShadow: `0 0 6px ${healthStatus === 'Healthy' ? '#10b981' : healthStatus === 'Degraded' ? '#f59e0b' : '#f85149'}` 
+          }} />
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>System {healthStatus}</span>
           <Activity size={14} color="#8b949e" />
         </div>
         
@@ -186,8 +195,10 @@ const TopNav = ({ currentView, setCurrentView, onLogout }) => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Admin User</div>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent-color)' }} />
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{user?.name || 'User'}</div>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' }}>
+            {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
+          </div>
         </div>
       </div>
     </header>
