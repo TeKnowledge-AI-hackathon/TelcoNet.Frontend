@@ -37,6 +37,8 @@ const Users = ({ user }) => {
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState('');
   const [editingId, setEditingId] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalData, setModalData] = useState({ fullName: '', email: '', role: 'Viewer' });
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -57,8 +59,48 @@ const Users = ({ user }) => {
     u.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  const deleteUser = (id) => {
-    if (window.confirm('Delete this user?')) setUsers(u => u.filter(x => x.id !== id));
+  const fetchUsers = async () => {
+    try {
+      const data = await userService.getUsers();
+      setUsers(data);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteUser = async (id) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        await userService.deleteUser(id);
+        setUsers(u => u.filter(x => x.id !== id));
+      } catch (err) {
+        alert('Failed to delete user: ' + err.message);
+      }
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      if (editingId) {
+        await userService.updateUser(editingId, modalData);
+      } else {
+        await userService.createUser(modalData);
+      }
+      setShowModal(false);
+      setEditingId(null);
+      setModalData({ fullName: '', email: '', role: 'Viewer' });
+      fetchUsers(); // Refresh list
+    } catch (err) {
+      alert('Error saving user: ' + err.message);
+    }
+  };
+
+  const openEdit = (u) => {
+    setEditingId(u.id);
+    setModalData({ fullName: u.name, email: u.email, role: u.role });
+    setShowModal(true);
   };
 
   const th = {
@@ -97,7 +139,7 @@ const Users = ({ user }) => {
         </div>
         {user?.role === 'admin' && (
           <button
-            onClick={() => alert('Add user dialog coming soon')}
+            onClick={() => { setShowModal(true); setEditingId(null); setModalData({ fullName: '', email: '', role: 'Viewer' }); }}
             style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '0.625rem 1.25rem',
@@ -192,7 +234,7 @@ const Users = ({ user }) => {
                       <td style={td}>
                         <div style={{ display: 'flex', gap: 12 }}>
                           <button
-                            onClick={() => alert(`Editing ${userItem.name}`)}
+                            onClick={() => openEdit(userItem)}
                             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#3b82f6', display: 'flex' }}
                             title="Edit"
                           >
@@ -239,6 +281,77 @@ const Users = ({ user }) => {
           ))}
         </div>
       </div>
+      </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 100, backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            background: '#161b22', border: '1px solid #30363d', borderRadius: 20,
+            width: '100%', maxWidth: 450, padding: '2rem', boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+          }}>
+            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: '1.5rem' }}>
+              {editingId ? 'Edit User' : 'Add New User'}
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase' }}>Full Name</label>
+                <input 
+                  type="text" 
+                  value={modalData.fullName}
+                  onChange={e => setModalData({...modalData, fullName: e.target.value})}
+                  placeholder="e.g. John Doe"
+                  style={{ width: '100%', boxSizing: 'border-box', background: '#0d1117', border: '1px solid #30363d', borderRadius: 10, padding: '0.75rem 1rem', color: '#fff', outline: 'none' }}
+                />
+              </div>
+              
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase' }}>Email Address</label>
+                <input 
+                  type="email" 
+                  value={modalData.email}
+                  onChange={e => setModalData({...modalData, email: e.target.value})}
+                  placeholder="name@noc.com"
+                  style={{ width: '100%', boxSizing: 'border-box', background: '#0d1117', border: '1px solid #30363d', borderRadius: 10, padding: '0.75rem 1rem', color: '#fff', outline: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase' }}>System Role</label>
+                <select 
+                  value={modalData.role}
+                  onChange={e => setModalData({...modalData, role: e.target.value})}
+                  style={{ width: '100%', boxSizing: 'border-box', background: '#0d1117', border: '1px solid #30363d', borderRadius: 10, padding: '0.75rem 1rem', color: '#fff', outline: 'none' }}
+                >
+                  <option value="Admin">Admin</option>
+                  <option value="Operator">Operator</option>
+                  <option value="Viewer">Viewer</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, marginTop: '1rem' }}>
+                <button 
+                  onClick={() => setShowModal(false)}
+                  style={{ flex: 1, padding: '0.75rem', background: 'transparent', border: '1px solid #30363d', borderRadius: 10, color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSave}
+                  style={{ flex: 1, padding: '0.75rem', background: '#3b82f6', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  {editingId ? 'Save Changes' : 'Create User'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
