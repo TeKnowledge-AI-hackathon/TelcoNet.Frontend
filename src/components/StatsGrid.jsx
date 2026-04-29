@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Wifi, Users, Clock, AlertTriangle } from 'lucide-react';
 import { dashboardService } from '../api/dashboardService';
+import { networkService } from '../api/networkService';
 
 const StatCard = ({ icon, label, value, trend, color, loading }) => (
   <div className="card flex-1 min-w-[200px] cursor-default">
@@ -24,50 +25,53 @@ const StatCard = ({ icon, label, value, trend, color, loading }) => (
 );
 
 const StatsGrid = () => {
-  const [kpis, setKpis] = useState(null);
+  const [statsData, setStatsData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchKpis = async () => {
+    const fetchData = async () => {
       try {
-        const data = await dashboardService.getKpis();
-        setKpis(data);
+        const [kpiData, healthData] = await Promise.all([
+          dashboardService.getKpis(),
+          networkService.getHealth()
+        ]);
+        setStatsData({ kpis: kpiData, health: healthData });
       } catch (err) {
-        console.error('Failed to fetch KPIs:', err);
+        console.error('Failed to fetch stats:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchKpis();
+    fetchData();
   }, []);
 
   const stats = [
     {
       icon: <Wifi size={20} />,
       label: 'Avg. Bandwidth',
-      value: kpis ? `${kpis.avgBandwidth} Gbps` : '0 Gbps',
-      trend: kpis?.bandwidthTrend,
+      value: statsData?.kpis?.throughput ? `${statsData.kpis.throughput.value} Gbps` : '0 Gbps',
+      trend: statsData?.kpis?.throughput ? (statsData.kpis.throughput.changePercent > 0 ? `+${statsData.kpis.throughput.changePercent}%` : `${statsData.kpis.throughput.changePercent}%`) : '0%',
       color: 'bg-[#3b82f6]',
     },
     {
       icon: <Users size={20} />,
       label: 'Active Nodes',
-      value: kpis ? kpis.activeNodes.toLocaleString() : '0',
-      trend: kpis?.nodesTrend,
+      value: statsData?.health ? statsData.health.healthyNodes.toLocaleString() : '0',
+      trend: `${statsData?.health?.totalNodes || 0} Total`,
       color: 'bg-[#2dd4bf]',
     },
     {
       icon: <Clock size={20} />,
-      label: 'System Uptime',
-      value: kpis ? `${kpis.uptime}%` : '0%',
-      trend: kpis?.uptimeTrend,
+      label: 'Active Outages',
+      value: statsData?.health ? statsData.health.activeOutages.toString() : '0',
+      trend: statsData?.health?.overallStatus || 'Unknown',
       color: 'bg-[#10b981]',
     },
     {
       icon: <AlertTriangle size={20} />,
-      label: 'Critical Alerts',
-      value: kpis ? kpis.criticalAlerts.toString() : '0',
-      trend: kpis?.alertsTrend,
+      label: 'Packet Loss',
+      value: statsData?.kpis?.packetLoss ? `${statsData.kpis.packetLoss.value}%` : '0%',
+      trend: statsData?.kpis?.packetLoss ? (statsData.kpis.packetLoss.changePercent > 0 ? `+${statsData.kpis.packetLoss.changePercent}%` : `${statsData.kpis.packetLoss.changePercent}%`) : '0%',
       color: 'bg-[#f85149]',
     },
   ];

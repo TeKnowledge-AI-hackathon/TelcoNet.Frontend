@@ -70,13 +70,9 @@ const MainChart = () => {
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
-              <linearGradient id="colorDownload" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="colorPrimary" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-              </linearGradient>
-              <linearGradient id="colorUpload" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#2dd4bf" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#2dd4bf" stopOpacity={0}/>
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#30363d" vertical={false} />
@@ -92,27 +88,23 @@ const MainChart = () => {
               fontSize={12} 
               tickLine={false} 
               axisLine={false}
-              tickFormatter={(value) => `${value}M`}
+              tickFormatter={(value) => `${value}G`}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Area 
-              type="monotone" 
-              dataKey="download" 
-              stroke="#3b82f6" 
-              strokeWidth={3}
-              fillOpacity={1} 
-              fill="url(#colorDownload)" 
-              name="Download"
-            />
-            <Area 
-              type="monotone" 
-              dataKey="upload" 
-              stroke="#2dd4bf" 
-              strokeWidth={3}
-              fillOpacity={1} 
-              fill="url(#colorUpload)" 
-              name="Upload"
-            />
+            {chartData.length > 0 && Object.keys(chartData[0])
+              .filter(key => key !== 'time')
+              .map((key, index) => (
+                <Area 
+                  key={key}
+                  type="monotone" 
+                  dataKey={key} 
+                  stroke={index === 0 ? "#3b82f6" : index === 1 ? "#2dd4bf" : "#8b5cf6"} 
+                  strokeWidth={3}
+                  fillOpacity={1} 
+                  fill={index === 0 ? "url(#colorPrimary)" : "none"} 
+                  name={key}
+                />
+              ))}
           </AreaChart>
         </ResponsiveContainer>
       )}

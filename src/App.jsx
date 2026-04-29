@@ -26,7 +26,13 @@ const renderView = (view, user, aiQuery, setAiQuery, setCurrentView) => {
 function App() {
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    if (!savedUser || savedUser === 'undefined') return null;
+    try {
+      return JSON.parse(savedUser);
+    } catch (e) {
+      console.error('Failed to parse user from localStorage:', e);
+      return null;
+    }
   });
   const [currentView, setCurrentView] = useState('AIChat');
   const [aiQuery, setAiQuery] = useState(null);

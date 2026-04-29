@@ -8,7 +8,13 @@ export const authService = {
     });
     if (data.token) {
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      const user = {
+        name: data.fullName,
+        email: data.email,
+        role: data.role?.toLowerCase()
+      };
+      localStorage.setItem('user', JSON.stringify(user));
+      return { ...data, user };
     }
     return data;
   },

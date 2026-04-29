@@ -74,9 +74,9 @@ const Analytics = () => {
       iconBg: '#065f46',
       label: 'Throughput',
       sublabel: 'Peak today',
-      value: kpisData?.avgBandwidth || '0',
-      unit: 'Gbps',
-      trend: kpisData?.bandwidthTrend || '0%',
+      value: kpisData?.throughput?.value || '0',
+      unit: kpisData?.throughput?.unit || 'Gbps',
+      trend: `${kpisData?.throughput?.changePercent > 0 ? '+' : ''}${kpisData?.throughput?.changePercent || 0}%`,
       trendBad: false,
     },
     {
@@ -84,9 +84,9 @@ const Analytics = () => {
       iconBg: '#4c1d95',
       label: 'Active Users',
       sublabel: 'Current',
-      value: kpisData?.activeNodes?.toLocaleString() || '0',
-      unit: 'Nodes',
-      trend: kpisData?.nodesTrend || '0%',
+      value: (kpisData?.activeUsers?.value / 1000).toFixed(1) || '0',
+      unit: 'K',
+      trend: `${kpisData?.activeUsers?.changePercent > 0 ? '+' : ''}${kpisData?.activeUsers?.changePercent || 0}%`,
       trendBad: false,
     },
   ];
@@ -142,10 +142,19 @@ const Analytics = () => {
                   wrapperStyle={{ paddingTop: 16, fontSize: 12 }}
                   formatter={(val) => <span style={{ color: '#8b949e' }}>{val}</span>}
                 />
-                <Line type="monotone" dataKey="lagosWest" name="Lagos West" stroke="#f59e0b" strokeWidth={2} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="lagosIsland" name="Lagos Island" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="ikeja" name="Ikeja" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="victoriaIsland" name="Victoria Island" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 4 }} />
+                {latencyChart.length > 0 && Object.keys(latencyChart[0])
+                  .filter(key => key !== 'time')
+                  .map((key, index) => (
+                    <Line 
+                      key={key}
+                      type="monotone" 
+                      dataKey={key} 
+                      name={key} 
+                      stroke={index === 0 ? "#f59e0b" : index === 1 ? "#10b981" : index === 2 ? "#3b82f6" : "#8b5cf6"} 
+                      strokeWidth={2} 
+                      dot={{ r: 4 }} 
+                    />
+                  ))}
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -165,14 +174,19 @@ const Analytics = () => {
                 <XAxis dataKey="time" stroke="#8b949e" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#8b949e" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="throughput"
-                  name="throughput"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  fill="url(#throughputGrad)"
-                />
+                {throughputChart.length > 0 && Object.keys(throughputChart[0])
+                  .filter(key => key !== 'time')
+                  .map((key, index) => (
+                    <Area
+                      key={key}
+                      type="monotone"
+                      dataKey={key}
+                      name={key}
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      fill="url(#throughputGrad)"
+                    />
+                  ))}
               </AreaChart>
             </ResponsiveContainer>
           </div>

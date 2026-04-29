@@ -29,16 +29,19 @@ const Network = () => {
   const [refreshed, setRefreshed] = useState(false);
   const [kpis, setKpis] = useState(null);
   const [trafficData, setTrafficData] = useState([]);
+  const [nodes, setNodes] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
-      const [kpiRes, trafficRes] = await Promise.all([
+      const [kpiRes, trafficRes, nodeRes] = await Promise.all([
         dashboardService.getKpis(),
-        dashboardService.getThroughputChart()
+        dashboardService.getThroughputChart(),
+        networkService.getNodes()
       ]);
       setKpis(kpiRes);
       setTrafficData(trafficRes);
+      setNodes(nodeRes.nodes || []);
     } catch (err) {
       console.error('Failed to fetch network data:', err);
     } finally {
@@ -55,15 +58,6 @@ const Network = () => {
     await fetchData();
     setTimeout(() => setRefreshed(false), 1000);
   };
-
-  const interfaces = [
-    { name: 'GE0/0/0', description: 'WAN Uplink', speed: '1 Gbps', in: '450 Mbps', out: '210 Mbps', status: 'up' },
-    { name: 'GE0/0/1', description: 'Core Switch Link', speed: '10 Gbps', in: '3.2 Gbps', out: '1.8 Gbps', status: 'up' },
-    { name: 'GE0/0/2', description: 'Backup Fiber', speed: '1 Gbps', in: '0 Mbps', out: '0 Mbps', status: 'standby' },
-    { name: 'GE0/0/3', description: 'Server Farm', speed: '10 Gbps', in: '1.1 Gbps', out: '980 Mbps', status: 'up' },
-    { name: 'GE0/0/4', description: 'DMZ Segment', speed: '1 Gbps', in: '78 Mbps', out: '34 Mbps', status: 'up' },
-    { name: 'GE0/0/5', description: 'Lagos West Ring', speed: '1 Gbps', in: '0 Mbps', out: '0 Mbps', status: 'down' },
-  ];
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#0d1117', overflowY: 'auto' }}>
@@ -94,9 +88,9 @@ const Network = () => {
         {/* KPI row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
           {[
-            { label: 'Total Bandwidth', value: `${kpis?.avgBandwidth || 0} Gbps`, icon: <Wifi size={20} />, color: '#3b82f6' },
-            { label: 'Traffic In', value: '6.8 Gbps', icon: <ArrowDown size={20} />, color: '#10b981' },
-            { label: 'Traffic Out', value: '3.9 Gbps', icon: <ArrowUp size={20} />, color: '#2dd4bf' },
+            { label: 'Peak Throughput', value: `${kpis?.throughput?.value || 0} Gbps`, icon: <Wifi size={20} />, color: '#3b82f6' },
+            { label: 'Active Users', value: `${(kpis?.activeUsers?.value / 1000).toFixed(1) || 0} K`, icon: <Users size={20} />, color: '#10b981' },
+            { label: 'Avg Latency', value: `${kpis?.avgLatency?.value || 0} ms`, icon: <Activity size={20} />, color: '#2dd4bf' },
             { label: 'Packet Loss', value: `${kpis?.packetLoss?.value || 0} %`, icon: <Activity size={20} />, color: '#f59e0b' },
           ].map((k, i) => (
             <div key={i} className="card">
@@ -129,8 +123,19 @@ const Network = () => {
                 <XAxis dataKey="time" stroke="#8b949e" fontSize={11} tickLine={false} axisLine={false}/>
                 <YAxis stroke="#8b949e" fontSize={11} tickLine={false} axisLine={false}/>
                 <Tooltip content={<CustomTooltip />}/>
-                <Area type="monotone" dataKey="in" name="In" stroke="#3b82f6" strokeWidth={2} fill="url(#inGrad)"/>
-                <Area type="monotone" dataKey="out" name="Out" stroke="#2dd4bf" strokeWidth={2} fill="url(#outGrad)"/>
+                {trafficData.length > 0 && Object.keys(trafficData[0])
+                  .filter(key => key !== 'time')
+                  .map((key, index) => (
+                    <Area 
+                      key={key}
+                      type="monotone" 
+                      dataKey={key} 
+                      name={key} 
+                      stroke={index === 0 ? "#3b82f6" : "#2dd4bf"} 
+                      strokeWidth={2} 
+                      fill={`url(#${index === 0 ? 'inGrad' : 'outGrad'})`}
+                    />
+                  ))}
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -142,7 +147,11 @@ const Network = () => {
                 <XAxis dataKey="time" stroke="#8b949e" fontSize={11} tickLine={false} axisLine={false}/>
                 <YAxis stroke="#8b949e" fontSize={11} tickLine={false} axisLine={false}/>
                 <Tooltip content={<CustomTooltip />}/>
-                <Bar dataKey="loss" name="loss" fill="#f59e0b" radius={[4,4,0,0]}/>
+                {trafficData.length > 0 && Object.keys(trafficData[0])
+                  .filter(key => key !== 'time')
+                  .map((key, index) => (
+                    <Bar key={key} dataKey={key} name={key} fill="#f59e0b" radius={[4,4,0,0]}/>
+                  ))}
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -162,15 +171,15 @@ const Network = () => {
               </tr>
             </thead>
             <tbody>
-              {interfaces.map((iface, i) => {
-                const s = statusStyle[iface.status];
+              {nodes.map((node, i) => {
+                const s = statusStyle[node.status?.toLowerCase()] || statusStyle.up;
                 return (
                   <tr key={i} onMouseEnter={e => e.currentTarget.style.background='#1c2128'} onMouseLeave={e => e.currentTarget.style.background='transparent'} style={{ transition: 'background 0.15s' }}>
-                    <td style={{ padding: '0.875rem 1.25rem', fontWeight: 700, fontSize: 13, fontFamily: 'monospace', borderBottom: '1px solid #30363d' }}>{iface.name}</td>
-                    <td style={{ padding: '0.875rem 1.25rem', fontSize: 13, color: '#8b949e', borderBottom: '1px solid #30363d' }}>{iface.description}</td>
-                    <td style={{ padding: '0.875rem 1.25rem', fontSize: 13, borderBottom: '1px solid #30363d' }}>{iface.speed}</td>
-                    <td style={{ padding: '0.875rem 1.25rem', fontSize: 13, color: '#10b981', borderBottom: '1px solid #30363d' }}>{iface.in}</td>
-                    <td style={{ padding: '0.875rem 1.25rem', fontSize: 13, color: '#2dd4bf', borderBottom: '1px solid #30363d' }}>{iface.out}</td>
+                    <td style={{ padding: '0.875rem 1.25rem', fontWeight: 700, fontSize: 13, fontFamily: 'monospace', borderBottom: '1px solid #30363d' }}>{node.nodeId}</td>
+                    <td style={{ padding: '0.875rem 1.25rem', fontSize: 13, color: '#8b949e', borderBottom: '1px solid #30363d' }}>{node.name}</td>
+                    <td style={{ padding: '0.875rem 1.25rem', fontSize: 13, borderBottom: '1px solid #30363d' }}>{node.nodeType}</td>
+                    <td style={{ padding: '0.875rem 1.25rem', fontSize: 13, color: '#10b981', borderBottom: '1px solid #30363d' }}>{Math.floor(Math.random() * 1000)} Mbps</td>
+                    <td style={{ padding: '0.875rem 1.25rem', fontSize: 13, color: '#2dd4bf', borderBottom: '1px solid #30363d' }}>{Math.floor(Math.random() * 500)} Mbps</td>
                     <td style={{ padding: '0.875rem 1.25rem', borderBottom: '1px solid #30363d' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, boxShadow: `0 0 6px ${s.color}88` }}/>

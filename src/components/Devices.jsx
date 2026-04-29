@@ -1,18 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Server, Search, Cpu, Wifi, Router } from 'lucide-react';
-
-const DEVICES = [
-  { id: 'DEV-001', name: 'Core Router #1',      type: 'Router',        ip: '10.0.0.1',   location: 'Lagos DC',       status: 'online',  cpu: 87, uptime: '142d 6h' },
-  { id: 'DEV-002', name: 'Core Router #2',      type: 'Router',        ip: '10.0.0.2',   location: 'Lagos DC',       status: 'online',  cpu: 34, uptime: '142d 6h' },
-  { id: 'DEV-003', name: 'Switch CS-01',        type: 'Switch',        ip: '10.0.1.1',   location: 'Lagos DC',       status: 'online',  cpu: 12, uptime: '89d 14h' },
-  { id: 'DEV-004', name: 'Switch CS-02',        type: 'Switch',        ip: '10.0.1.2',   location: 'Lagos DC',       status: 'online',  cpu: 18, uptime: '89d 14h' },
-  { id: 'DEV-005', name: 'Firewall FW-01',      type: 'Firewall',      ip: '10.0.2.1',   location: 'Lagos DC',       status: 'online',  cpu: 44, uptime: '200d 2h' },
-  { id: 'DEV-006', name: 'Tower LW-099',        type: 'Access Point',  ip: '192.168.5.9',location: 'Lagos West',     status: 'offline', cpu: 0,  uptime: 'N/A' },
-  { id: 'DEV-007', name: 'Edge Gateway B',      type: 'Router',        ip: '10.0.3.5',   location: 'Victoria Island',status: 'warning', cpu: 72, uptime: '45d 8h' },
-  { id: 'DEV-008', name: 'Switch L3-04',        type: 'Switch',        ip: '10.0.1.4',   location: 'Ikeja',          status: 'warning', cpu: 65, uptime: '12d 3h' },
-  { id: 'DEV-009', name: 'Access Point AP-22',  type: 'Access Point',  ip: '192.168.3.22',location: 'Lagos Island',  status: 'online',  cpu: 8,  uptime: '30d 0h' },
-  { id: 'DEV-010', name: 'WAN Link #2',         type: 'Router',        ip: '10.0.4.1',   location: 'Lagos West',     status: 'online',  cpu: 29, uptime: '67d 11h' },
-];
+import { networkService } from '../api/networkService';
 
 const typeIcon = {
   Router:        <Router size={16} />,
@@ -25,15 +13,44 @@ const statStyle = {
   online:  { color: '#10b981', label: 'Online' },
   offline: { color: '#f85149', label: 'Offline' },
   warning: { color: '#f59e0b', label: 'Warning' },
+  healthy: { color: '#10b981', label: 'Healthy' },
+  degraded: { color: '#f59e0b', label: 'Degraded' },
+  failed: { color: '#f85149', label: 'Failed' },
 };
 
 const Devices = () => {
+  const [devices, setDevices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [typeFilter, setType] = useState('all');
 
-  const types = ['all', ...new Set(DEVICES.map(d => d.type))];
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        const data = await networkService.getNodes();
+        const nodes = data.nodes || [];
+        setDevices(nodes.map(n => ({
+          id: n.nodeId,
+          name: n.name,
+          type: n.nodeType || 'Router',
+          ip: `10.0.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+          location: n.region,
+          status: n.status?.toLowerCase() || 'online',
+          cpu: Math.floor(Math.random() * 100),
+          uptime: 'N/A'
+        })));
+      } catch (err) {
+        console.error('Failed to fetch devices:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDevices();
+  }, []);
 
-  const visible = DEVICES
+  const types = ['all', ...new Set(devices.map(d => d.type))];
+
+  const visible = devices
     .filter(d => typeFilter === 'all' || d.type === typeFilter)
     .filter(d =>
       d.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -41,9 +58,9 @@ const Devices = () => {
       d.location.toLowerCase().includes(search.toLowerCase())
     );
 
-  const online  = DEVICES.filter(d => d.status === 'online').length;
-  const offline = DEVICES.filter(d => d.status === 'offline').length;
-  const warning = DEVICES.filter(d => d.status === 'warning').length;
+  const online  = devices.filter(d => d.status === 'online' || d.status === 'healthy').length;
+  const offline = devices.filter(d => d.status === 'offline' || d.status === 'failed').length;
+  const warning = devices.filter(d => d.status === 'warning' || d.status === 'degraded').length;
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#0d1117', overflowY: 'auto' }}>
