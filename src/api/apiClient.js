@@ -19,20 +19,20 @@ const apiClient = async (endpoint, options = {}) => {
 
   const response = await fetch(`${BASE_URL}${endpoint}`, config);
 
+  // No Content — successful PUT/DELETE with empty body
+  if (response.status === 204) {
+    return null;
+  }
+
   if (response.status === 401) {
     localStorage.removeItem('token');
-    window.location.reload(); // Simple way to force re-auth
+    window.location.href = '/'; // Redirect to login instead of reloading
     throw new Error('Unauthorized');
   }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'An error occurred');
-  }
-
-  // Some endpoints might not return content (e.g., 204 No Content)
-  if (response.status === 204) {
-    return null;
+    throw new Error(errorData.message || `Request failed with status ${response.status}`);
   }
 
   return response.json();

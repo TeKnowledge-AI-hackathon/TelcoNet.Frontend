@@ -40,6 +40,8 @@ const Users = ({ user }) => {
   const [showModal, setShowModal] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [modalData, setModalData] = useState({ fullName: '', email: '', role: 'Viewer' });
+  const [saving, setSaving] = useState(false);
+  const [modalError, setModalError] = useState('');
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -86,6 +88,9 @@ const Users = ({ user }) => {
   };
 
   const handleSave = async () => {
+    if (saving) return;
+    setModalError('');
+    setSaving(true);
     try {
       if (editingId) {
         await userService.updateUser(editingId, modalData);
@@ -97,13 +102,16 @@ const Users = ({ user }) => {
       setModalData({ fullName: '', email: '', role: 'Viewer' });
       fetchUsers(); // Refresh list
     } catch (err) {
-      alert('Error saving user: ' + err.message);
+      setModalError(err.message || 'Failed to save user. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
   const openEdit = (u) => {
     setEditingId(u.id);
     setModalData({ fullName: u.name, email: u.email, role: u.role });
+    setModalError('');
     setShowModal(true);
   };
 
@@ -285,7 +293,7 @@ const Users = ({ user }) => {
           ))}
         </div>
       </div>
-      </div>
+
 
       {/* Modal */}
       {showModal && (
@@ -300,7 +308,7 @@ const Users = ({ user }) => {
             position: 'relative'
           }}>
             <button 
-              onClick={() => setShowModal(false)}
+              onClick={() => { setShowModal(false); setModalError(''); }}
               style={{ position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', color: '#8b949e', cursor: 'pointer', fontSize: 24 }}
             >
               ×
@@ -312,6 +320,12 @@ const Users = ({ user }) => {
               {editingId ? 'Modify user details and system permissions.' : 'Grant system access to a new team member.'}
             </p>
             
+            {modalError && (
+              <div style={{ background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.35)', borderRadius: 10, padding: '0.75rem 1rem', color: '#f85149', fontSize: 13, marginBottom: '1rem' }}>
+                ⚠ {modalError}
+              </div>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Name</label>
@@ -364,7 +378,7 @@ const Users = ({ user }) => {
 
               <div style={{ display: 'flex', gap: 16, marginTop: '1.5rem' }}>
                 <button 
-                  onClick={() => setShowModal(false)}
+                  onClick={() => { setShowModal(false); setModalError(''); }}
                   style={{ flex: 1, padding: '1rem', background: 'transparent', border: '1px solid #30363d', borderRadius: 12, color: '#fff', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.background = '#1c2128'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -373,15 +387,16 @@ const Users = ({ user }) => {
                 </button>
                 <button 
                   onClick={handleSave}
+                  disabled={saving}
                   style={{ 
-                    flex: 1, padding: '1rem', background: '#3b82f6', border: 'none', borderRadius: 12, 
-                    color: '#fff', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
-                    boxShadow: '0 4px 12px rgba(59,130,246,0.3)'
+                    flex: 1, padding: '1rem', background: saving ? '#1e40af' : '#3b82f6', border: 'none', borderRadius: 12, 
+                    color: '#fff', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
+                    boxShadow: '0 4px 12px rgba(59,130,246,0.3)', opacity: saving ? 0.7 : 1
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#2563eb'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#3b82f6'}
+                  onMouseEnter={e => { if (!saving) e.currentTarget.style.background = '#2563eb'; }}
+                  onMouseLeave={e => { if (!saving) e.currentTarget.style.background = '#3b82f6'; }}
                 >
-                  {editingId ? 'Save Changes' : 'Create User'}
+                  {saving ? 'Saving…' : editingId ? 'Save Changes' : 'Create User'}
                 </button>
               </div>
             </div>
