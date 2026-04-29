@@ -317,7 +317,7 @@ const Users = ({ user }) => {
               {editingId ? 'Edit User' : 'Add New User'}
             </h3>
             <p style={{ color: '#8b949e', fontSize: 14, marginBottom: '2rem' }}>
-              {editingId ? 'Modify user details and system permissions.' : 'Grant system access to a new team member.'}
+              {editingId ? 'Update the system role for this user.' : 'Grant system access to a new team member.'}
             </p>
             
             {modalError && (
@@ -332,10 +332,11 @@ const Users = ({ user }) => {
                 <input 
                   type="text" 
                   value={modalData.fullName}
-                  onChange={e => setModalData({...modalData, fullName: e.target.value})}
+                  readOnly={!!editingId}
+                  onChange={e => !editingId && setModalData({...modalData, fullName: e.target.value})}
                   placeholder="e.g. John Doe"
-                  style={{ width: '100%', boxSizing: 'border-box', background: '#0d1117', border: '1px solid #30363d', borderRadius: 12, padding: '1rem', color: '#fff', outline: 'none', fontSize: 15 }}
-                  onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                  style={{ width: '100%', boxSizing: 'border-box', background: editingId ? '#0d1117' : '#0d1117', border: '1px solid #30363d', borderRadius: 12, padding: '1rem', color: editingId ? '#8b949e' : '#fff', outline: 'none', fontSize: 15, cursor: editingId ? 'default' : 'text' }}
+                  onFocus={e => { if (!editingId) e.target.style.borderColor = '#3b82f6'; }}
                   onBlur={e => e.target.style.borderColor = '#30363d'}
                 />
               </div>
@@ -345,10 +346,11 @@ const Users = ({ user }) => {
                 <input 
                   type="email" 
                   value={modalData.email}
-                  onChange={e => setModalData({...modalData, email: e.target.value})}
+                  readOnly={!!editingId}
+                  onChange={e => !editingId && setModalData({...modalData, email: e.target.value})}
                   placeholder="name@noc.com"
-                  style={{ width: '100%', boxSizing: 'border-box', background: '#0d1117', border: '1px solid #30363d', borderRadius: 12, padding: '1rem', color: '#fff', outline: 'none', fontSize: 15 }}
-                  onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                  style={{ width: '100%', boxSizing: 'border-box', background: '#0d1117', border: '1px solid #30363d', borderRadius: 12, padding: '1rem', color: editingId ? '#8b949e' : '#fff', outline: 'none', fontSize: 15, cursor: editingId ? 'default' : 'text' }}
+                  onFocus={e => { if (!editingId) e.target.style.borderColor = '#3b82f6'; }}
                   onBlur={e => e.target.style.borderColor = '#30363d'}
                 />
               </div>

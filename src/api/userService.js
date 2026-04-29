@@ -15,9 +15,9 @@ export const userService = {
     method: 'POST',
     body: JSON.stringify(userData),
   }),
-  updateUser: (id, userData) => apiClient(`/Users/${id}`, {
+  updateUser: (id, userData) => apiClient(`/Users/${id}/role`, {
     method: 'PUT',
-    body: JSON.stringify(userData),
+    body: JSON.stringify({ role: userData.role }),
   }),
   deleteUser: (id) => apiClient(`/Users/${id}`, {
     method: 'DELETE',
