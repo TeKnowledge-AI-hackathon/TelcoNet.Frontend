@@ -16,8 +16,8 @@ const TopNav = ({ currentView, setCurrentView, onLogout, user }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [healthStatus, setHealthStatus] = useState('Healthy');
   const [notifications, setNotifications] = useState([]);
-
   const lastBeepRef = useRef(0);
+  const lastShakeRef = useRef(0);
 
   const playAlertSound = () => {
     try {
@@ -46,13 +46,22 @@ const TopNav = ({ currentView, setCurrentView, onLogout, user }) => {
       const status = health.overallStatus || 'Healthy';
       setHealthStatus(status);
 
+      const now = Date.now();
+      
       // Trigger audio alert every 20 minutes if Critical
       if (status === 'Critical') {
-        const now = Date.now();
         const TWENTY_MINUTES = 20 * 60 * 1000;
         if (now - lastBeepRef.current >= TWENTY_MINUTES) {
           playAlertSound();
           lastBeepRef.current = now;
+        }
+
+        // Shake the bell every 1 minute if Critical
+        const ONE_MINUTE = 60 * 1000;
+        if (now - lastShakeRef.current >= ONE_MINUTE) {
+          setIsRinging(true);
+          setTimeout(() => setIsRinging(false), 3000);
+          lastShakeRef.current = now;
         }
       }
 

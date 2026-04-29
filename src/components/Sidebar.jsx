@@ -1,10 +1,10 @@
 import React from 'react';
-import { 
-  LayoutDashboard, 
-  Activity, 
-  ShieldAlert, 
-  Server, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Activity,
+  ShieldAlert,
+  Server,
+  Settings,
   MessageSquare,
   Zap,
   Shield
@@ -14,7 +14,7 @@ const Sidebar = ({ currentView, setCurrentView, onLogout, user }) => {
   const menuItems = [
     { id: 'AIChat', icon: <MessageSquare size={20} />, label: 'AI Intelligence' },
   ];
-  
+
   if (user && user.role?.toString().toLowerCase() === 'admin') {
     menuItems.push({ id: 'Users', icon: <Server size={20} />, label: 'Users' });
     menuItems.push({ id: 'AuditLog', icon: <Shield size={20} />, label: 'Audit Log' });
@@ -30,14 +30,13 @@ const Sidebar = ({ currentView, setCurrentView, onLogout, user }) => {
 
       <div className="flex-1 space-y-2">
         {menuItems.map((item, index) => (
-          <div 
+          <div
             key={index}
             onClick={() => setCurrentView(item.id)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 ${
-              currentView === item.id 
-                ? 'bg-[#161b22] text-[#2dd4bf] border border-[#30363d] glow-teal' 
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 ${currentView === item.id
+                ? 'bg-[#161b22] text-[#2dd4bf] border border-[#30363d] glow-teal'
                 : 'text-[#8b949e] hover:bg-[#161b22] hover:text-white'
-            }`}
+              }`}
           >
             {item.icon}
             <span className="font-medium">{item.label}</span>
@@ -55,7 +54,7 @@ const Sidebar = ({ currentView, setCurrentView, onLogout, user }) => {
             <div className="text-xs text-[#8b949e] uppercase">{user?.role}</div>
           </div>
         </div>
-        <button 
+        <button
           onClick={() => onLogout()}
           className="w-full py-2 text-xs font-semibold text-[#8b949e] hover:text-white transition-colors cursor-pointer"
         >
