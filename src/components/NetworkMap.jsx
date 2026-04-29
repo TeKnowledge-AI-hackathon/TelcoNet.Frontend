@@ -20,7 +20,7 @@ const NetworkMap = ({ setAiQuery, setCurrentView }) => {
   useEffect(() => {
     const fetchTowers = async () => {
       try {
-        const data = await networkService.getNodes();
+        const data = await networkService.getNodes(null, timeRange);
         // The API returns { region: "...", nodes: [...] }
         setTowers(data.nodes || []);
       } catch (err) {
@@ -30,7 +30,7 @@ const NetworkMap = ({ setAiQuery, setCurrentView }) => {
       }
     };
     fetchTowers();
-  }, []);
+  }, [timeRange]);
 
 
 
