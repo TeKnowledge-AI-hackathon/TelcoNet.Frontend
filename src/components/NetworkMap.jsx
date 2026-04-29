@@ -4,7 +4,7 @@ import { networkService } from '../api/networkService';
 const statusColor = {
   healthy: '#10b981',
   degraded: '#f59e0b',
-  failed: '#f85149',
+  down: '#f85149',
 };
 
 const NetworkMap = ({ setAiQuery, setCurrentView }) => {
@@ -46,7 +46,7 @@ const NetworkMap = ({ setAiQuery, setCurrentView }) => {
     towers.forEach(tower => {
       const status = tower.status?.toLowerCase() || 'healthy';
       const color = statusColor[status] || statusColor.healthy;
-      const isFailed = status === 'failed';
+      const isFailed = status === 'down';
       
       const html = `
         <div style="
@@ -248,7 +248,7 @@ const NetworkMap = ({ setAiQuery, setCurrentView }) => {
           {[
             { label: 'Online', value: towers.filter(t => t.status === 'healthy').length, color: '#10b981' },
             { label: 'Degraded', value: towers.filter(t => t.status === 'degraded').length, color: '#f59e0b' },
-            { label: 'Failed', value: towers.filter(t => t.status === 'failed').length, color: '#f85149' },
+            { label: 'Failed', value: towers.filter(t => t.status === 'down').length, color: '#f85149' },
           ].map(s => (
             <div
               key={s.label}
