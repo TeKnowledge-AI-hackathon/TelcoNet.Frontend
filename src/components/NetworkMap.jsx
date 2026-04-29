@@ -74,9 +74,9 @@ const NetworkMap = ({ setAiQuery, setCurrentView }) => {
       // Add tooltip
       marker.bindTooltip(`
         <div style="background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px; color: #fff; min-width: 180px;">
-          <div style="font-weight: 800; margin-bottom: 6px; font-family: inherit; font-size: 14px;">${tower.id}</div>
-          <div style="color: #8b949e; font-size: 11px; margin-bottom: 2px;">${tower.street || ''}</div>
-          <div style="color: #8b949e; font-size: 11px; margin-bottom: 8px;">LGA: ${tower.lga || ''}</div>
+          <div style="font-weight: 800; margin-bottom: 6px; font-family: inherit; font-size: 14px;">${tower.nodeId}</div>
+          <div style="color: #8b949e; font-size: 11px; margin-bottom: 2px;">${tower.name || ''}</div>
+          <div style="color: #8b949e; font-size: 11px; margin-bottom: 8px;">Region: ${tower.region || ''}</div>
           <div style="color: ${color}; font-weight: 700; text-transform: capitalize; font-size: 12px; display: flex; align-items: center; gap: 6px; padding-top: 8px; border-top: 1px solid #30363d;">
             <div style="width: 8px; height: 8px; border-radius: 50%; background: ${color}; box-shadow: 0 0 6px ${color};"></div>
             Status: ${status}
@@ -90,7 +90,7 @@ const NetworkMap = ({ setAiQuery, setCurrentView }) => {
       });
 
       marker.on('click', () => {
-        setAiQuery(`Analyze why tower ${tower.id} (${tower.street || ''}, ${tower.lga || ''}) is currently in ${status.toUpperCase()} status based on historical data.`);
+        setAiQuery(`Analyze why tower ${tower.nodeId} (${tower.name || ''}, ${tower.region || ''}) is currently in ${status.toUpperCase()} status based on historical data.`);
         setCurrentView('AIChat');
       });
     });
