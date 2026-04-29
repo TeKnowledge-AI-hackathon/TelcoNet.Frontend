@@ -31,7 +31,7 @@ const SignupPage = ({ onLogin, onGoToLogin }) => {
 
     setLoading(true);
     try {
-      await authService.register({ fullName: fullName.trim(), email: email.trim(), password });
+      await authService.register({ fullName: fullName.trim(), email: email.trim(), password, role: 'view' });
       setSuccess('Account created! Signing you in…');
       // Auto-login after registration
       const data = await authService.login({ email: email.trim(), password });

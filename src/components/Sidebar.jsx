@@ -6,7 +6,8 @@ import {
   Server, 
   Settings, 
   MessageSquare,
-  Zap
+  Zap,
+  Shield
 } from 'lucide-react';
 
 const Sidebar = ({ currentView, setCurrentView, onLogout, user }) => {
@@ -16,6 +17,7 @@ const Sidebar = ({ currentView, setCurrentView, onLogout, user }) => {
   
   if (user && user.role !== 'viewer') {
     menuItems.push({ id: 'Users', icon: <Server size={20} />, label: 'Users' });
+    menuItems.push({ id: 'AuditLog', icon: <Shield size={20} />, label: 'Audit Log' });
   }
 
   menuItems.push({ id: 'Settings', icon: <Settings size={20} />, label: 'Settings' });

@@ -149,24 +149,6 @@ const Users = ({ user }) => {
           </div>
           <p style={{ color: '#8b949e', fontSize: 13 }}>Manage user access and role-based permissions</p>
         </div>
-        {user?.role === 'admin' && (
-          <button
-            onClick={() => { setShowModal(true); setEditingId(null); setModalData({ fullName: '', email: '', role: 'Viewer' }); }}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '0.625rem 1.25rem',
-              background: '#3b82f6', color: 'white',
-              border: 'none', borderRadius: 10,
-              fontWeight: 700, fontSize: 14, cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(59,130,246,0.25)',
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = '#2563eb'}
-            onMouseLeave={e => e.currentTarget.style.background = '#3b82f6'}
-          >
-            <Plus size={18} /> Add User
-          </button>
-        )}
       </div>
 
       <div style={{ padding: '1.5rem 2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>

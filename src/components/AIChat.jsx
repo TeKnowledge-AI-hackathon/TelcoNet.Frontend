@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bookmark, Clock, Bot, User, Loader } from 'lucide-react';
+import { Search, Bookmark, Clock, Bot, User, Loader, Plus } from 'lucide-react';
 import { copilotService } from '../api/copilotService';
 
 const FormattedMessage = ({ content }) => {
   if (!content) return null;
-  
+
   const lines = content.split('\n');
-  
+
   const parseInline = (text) => {
     // Handle bold: **text**
     // regex to find **...**
@@ -14,8 +14,8 @@ const FormattedMessage = ({ content }) => {
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         return (
-          <span key={i} style={{ 
-            color: '#3b82f6', 
+          <span key={i} style={{
+            color: '#3b82f6',
             fontWeight: 800,
             textShadow: '0 0 8px rgba(59, 130, 246, 0.3)'
           }}>
@@ -38,13 +38,13 @@ const FormattedMessage = ({ content }) => {
           const level = trimmed.match(/^#+/)[0].length;
           const text = trimmed.replace(/^#+\s*/, '');
           return (
-            <div key={i} style={{ 
+            <div key={i} style={{
               marginTop: i === 0 ? '0' : '1.25rem',
               marginBottom: '0.5rem',
               paddingBottom: '4px',
               borderBottom: '1px solid #30363d'
             }}>
-              <span style={{ 
+              <span style={{
                 fontSize: level === 3 ? '1.15rem' : '1.05rem',
                 fontWeight: 800,
                 color: '#f0f6fc',
@@ -60,15 +60,15 @@ const FormattedMessage = ({ content }) => {
         // List item: - or *
         if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
           return (
-            <div key={i} style={{ 
-              display: 'flex', 
-              gap: '12px', 
+            <div key={i} style={{
+              display: 'flex',
+              gap: '12px',
               paddingLeft: '4px',
               marginBottom: '4px',
               alignItems: 'flex-start'
             }}>
-              <div style={{ 
-                width: 6, height: 6, borderRadius: '50%', 
+              <div style={{
+                width: 6, height: 6, borderRadius: '50%',
                 background: '#3b82f6', marginTop: 9, flexShrink: 0,
                 boxShadow: '0 0 8px rgba(59, 130, 246, 0.5)'
               }} />
@@ -81,16 +81,16 @@ const FormattedMessage = ({ content }) => {
         if (/^\d+[\).]\s/.test(trimmed)) {
           const match = trimmed.match(/^(\d+[\).])\s*(.*)/);
           return (
-            <div key={i} style={{ 
-              display: 'flex', 
-              gap: '12px', 
+            <div key={i} style={{
+              display: 'flex',
+              gap: '12px',
               paddingLeft: '4px',
               marginBottom: '8px',
               alignItems: 'flex-start'
             }}>
-              <div style={{ 
-                color: '#3b82f6', fontWeight: 800, fontSize: '0.9rem', 
-                minWidth: '20px', marginTop: 1 
+              <div style={{
+                color: '#3b82f6', fontWeight: 800, fontSize: '0.9rem',
+                minWidth: '20px', marginTop: 1
               }}>
                 {match[1]}
               </div>
@@ -116,16 +116,22 @@ const AIChat = ({ user, initialQuery, setInitialQuery }) => {
   const [sessionId, setSessionId] = useState(null);
   const scrollRef = useRef(null);
 
-  const recentQueries = [
-    { title: 'Latency spike in Victoria Island', time: '5 min ago' },
-    { title: 'Backhaul congestion analysis', time: '1 hour ago' },
-    { title: 'Tower status Lagos region', time: '3 hours ago' },
-  ];
+  const [recentQueries, setRecentQueries] = useState(() => {
+    const saved = localStorage.getItem('recentQueries');
+    return saved ? JSON.parse(saved) : [
+      { title: 'Latency spike in Victoria Island', time: '5 min ago' },
+      { title: 'Backhaul congestion analysis', time: '1 hour ago' },
+      { title: 'Tower status Lagos region', time: '3 hours ago' },
+    ];
+  });
 
-  const savedInvestigations = [
-    { title: 'Lagos West Outage - Apr 20' },
-    { title: 'Ikeja Performance Report' },
-  ];
+  const [savedInvestigations, setSavedInvestigations] = useState(() => {
+    const saved = localStorage.getItem('savedInvestigations');
+    return saved ? JSON.parse(saved) : [
+      { title: 'Lagos West Outage - Apr 20' },
+      { title: 'Ikeja Performance Report' },
+    ];
+  });
 
   const suggestedQueries = [
     "Why is Lagos West slow?",
@@ -156,9 +162,15 @@ const AIChat = ({ user, initialQuery, setInitialQuery }) => {
     setInputValue('');
     setIsTyping(true);
 
+    // Save to recent queries (avoid duplicates)
+    const filteredRecent = recentQueries.filter(q => q.title !== text);
+    const newRecent = [{ title: text, time: 'Just now' }, ...filteredRecent.slice(0, 4)];
+    setRecentQueries(newRecent);
+    localStorage.setItem('recentQueries', JSON.stringify(newRecent));
+
     try {
       const response = await copilotService.chat(text, sessionId);
-      
+
       if (response.sessionId) {
         setSessionId(response.sessionId);
       }
@@ -172,6 +184,19 @@ const AIChat = ({ user, initialQuery, setInitialQuery }) => {
     }
   };
 
+  const handleSaveInvestigation = (title) => {
+    if (savedInvestigations.some(s => s.title === title)) return;
+    const newSaved = [{ title }, ...savedInvestigations];
+    setSavedInvestigations(newSaved);
+    localStorage.setItem('savedInvestigations', JSON.stringify(newSaved));
+  };
+
+  const handleNewChat = () => {
+    setMessages([]);
+    setSessionId(null);
+    setInputValue('');
+  };
+
   return (
     <div style={{ flex: 1, display: 'flex', overflow: 'hidden', background: '#0d1117', minHeight: 0 }}>
       {/* History Sidebar */}
@@ -180,6 +205,20 @@ const AIChat = ({ user, initialQuery, setInitialQuery }) => {
         background: '#0d1117', overflowY: 'auto', display: 'flex',
         flexDirection: 'column', gap: '2rem', flexShrink: 0,
       }}>
+        <button
+          onClick={handleNewChat}
+          style={{
+            width: '100%', padding: '12px', background: '#238636', color: 'white',
+            border: 'none', borderRadius: 8, fontWeight: 700, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center',
+            fontSize: 14, boxShadow: '0 4px 12px rgba(35, 134, 54, 0.2)'
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = '#2ea043'}
+          onMouseLeave={e => e.currentTarget.style.background = '#238636'}
+        >
+          <Plus size={18} /> New Chat
+        </button>
+
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, marginBottom: 16 }}>
             <Clock size={18} />
@@ -187,7 +226,12 @@ const AIChat = ({ user, initialQuery, setInitialQuery }) => {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {recentQueries.map((q, i) => (
-              <div key={i} className="card" style={{ cursor: 'pointer', padding: '0.875rem' }}>
+              <div
+                key={i}
+                className="card"
+                onClick={() => handleSend(q.title)}
+                style={{ cursor: 'pointer', padding: '0.875rem' }}
+              >
                 <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{q.title}</div>
                 <div style={{ fontSize: 11, color: '#8b949e' }}>{q.time}</div>
               </div>
@@ -202,7 +246,12 @@ const AIChat = ({ user, initialQuery, setInitialQuery }) => {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {savedInvestigations.map((q, i) => (
-              <div key={i} className="card" style={{ cursor: 'pointer', padding: '0.875rem' }}>
+              <div
+                key={i}
+                className="card"
+                onClick={() => handleSend(q.title)}
+                style={{ cursor: 'pointer', padding: '0.875rem' }}
+              >
                 <div style={{ fontSize: 13, fontWeight: 600 }}>{q.title}</div>
               </div>
             ))}
@@ -275,12 +324,12 @@ const AIChat = ({ user, initialQuery, setInitialQuery }) => {
           </div>
         ) : (
           <div style={{ width: '100%', maxWidth: 800, height: '100%', display: 'flex', flexDirection: 'column' }}>
-            
+
             {/* Chat Messages */}
             <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '2rem 1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               {messages.map((msg, i) => (
                 <div key={i} style={{ display: 'flex', gap: '1rem', flexDirection: msg.role === 'user' ? 'row-reverse' : 'row' }}>
-                  <div style={{ 
+                  <div style={{
                     width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
                     background: msg.role === 'user' ? '#1c2128' : 'rgba(59, 130, 246, 0.15)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -288,25 +337,41 @@ const AIChat = ({ user, initialQuery, setInitialQuery }) => {
                   }}>
                     {msg.role === 'user' ? <User size={18} color="#8b949e" /> : <Bot size={18} color="#3b82f6" />}
                   </div>
-                  <div style={{ 
+                  <div style={{
                     background: msg.role === 'user' ? '#161b22' : 'transparent',
                     border: msg.role === 'user' ? '1px solid #30363d' : 'none',
                     padding: msg.role === 'user' ? '12px 16px' : '6px 0',
                     borderRadius: msg.role === 'user' ? '16px 4px 16px 16px' : '0',
-                    color: '#c9d1d9', fontSize: 15, lineHeight: 1.6, maxWidth: '85%'
+                    color: '#c9d1d9', fontSize: 15, lineHeight: 1.6, maxWidth: '85%',
+                    position: 'relative'
                   }}>
                     {msg.role === 'user' ? (
                       <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
                     ) : (
-                      <FormattedMessage content={msg.content} />
+                      <>
+                        <FormattedMessage content={msg.content} />
+                        <button
+                          onClick={() => handleSaveInvestigation(messages[i - 1]?.content || 'Saved Investigation')}
+                          style={{
+                            marginTop: 12, display: 'flex', alignItems: 'center', gap: 6,
+                            background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)',
+                            padding: '4px 10px', borderRadius: 6, fontSize: 11, color: '#3b82f6',
+                            cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s'
+                          }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.2)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'}
+                        >
+                          <Bookmark size={12} /> Save to Investigations
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
               ))}
-              
+
               {isTyping && (
                 <div style={{ display: 'flex', gap: '1rem', flexDirection: 'row' }}>
-                  <div style={{ 
+                  <div style={{
                     width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
                     background: 'rgba(59, 130, 246, 0.15)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',

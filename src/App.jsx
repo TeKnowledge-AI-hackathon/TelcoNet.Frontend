@@ -9,6 +9,7 @@ import TopNav from './components/TopNav';
 import Analytics from './components/Analytics';
 import NetworkMap from './components/NetworkMap';
 import Timeline from './components/Timeline';
+import AuditLog from './components/AuditLog';
 import { applyTheme } from './themeUtils';
 import { authService } from './api/authService';
 
@@ -19,6 +20,7 @@ const renderView = (view, user, aiQuery, setAiQuery, setCurrentView) => {
     case 'Analytics': return <Analytics />;
     case 'Timeline': return <Timeline />;
     case 'Users': return <Users user={user} />;
+    case 'AuditLog': return <AuditLog />;
     case 'Settings': return <SettingsPage />;
     default: return <AIChat user={user} initialQuery={aiQuery} setInitialQuery={setAiQuery} />;
   }
