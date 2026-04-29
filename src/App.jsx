@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import LoginPage from './components/LoginPage';
+import SignupPage from './components/SignupPage';
 import AIChat from './components/AIChat';
 import Users from './components/Users';
 import Sidebar from './components/Sidebar';
@@ -36,6 +37,7 @@ function App() {
   });
   const [currentView, setCurrentView] = useState('AIChat');
   const [aiQuery, setAiQuery] = useState(null);
+  const [showSignup, setShowSignup] = useState(false);
 
   useEffect(() => {
     applyTheme(0);
@@ -52,7 +54,15 @@ function App() {
   };
 
   if (!user) {
-    return <LoginPage onLogin={(u) => setUser(u)} />;
+    if (showSignup) {
+      return (
+        <SignupPage
+          onLogin={(u) => { setUser(u); setShowSignup(false); }}
+          onGoToLogin={() => setShowSignup(false)}
+        />
+      );
+    }
+    return <LoginPage onLogin={(u) => setUser(u)} onGoToSignup={() => setShowSignup(true)} />;
   }
 
   return (

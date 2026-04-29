@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { authService } from '../api/authService';
 
-const LoginPage = ({ onLogin }) => {
+const LoginPage = ({ onLogin, onGoToSignup }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -84,6 +84,19 @@ const LoginPage = ({ onLogin }) => {
           ))}
         </div>
       </div>
+
+      <p style={{ color: '#8b949e', fontSize: 13, marginTop: 24 }}>
+        Don't have an account?{' '}
+        <button
+          onClick={onGoToSignup}
+          style={{
+            background: 'none', border: 'none', color: '#3b82f6',
+            cursor: 'pointer', fontWeight: 700, fontSize: 13, padding: 0,
+          }}
+        >
+          Sign up
+        </button>
+      </p>
     </div>
   );
 };
