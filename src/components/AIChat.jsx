@@ -56,7 +56,7 @@ const AIChat = ({ user, initialQuery, setInitialQuery }) => {
         setSessionId(response.sessionId);
       }
 
-      setMessages(prev => [...prev, { role: 'ai', content: response.answer || response.content || "I couldn't process that request." }]);
+      setMessages(prev => [...prev, { role: 'ai', content: response.response || response.answer || response.content || "I couldn't process that request." }]);
     } catch (err) {
       console.error('Chat failed:', err);
       setMessages(prev => [...prev, { role: 'ai', content: "Sorry, I'm having trouble connecting to the network intelligence service right now." }]);
@@ -186,7 +186,7 @@ const AIChat = ({ user, initialQuery, setInitialQuery }) => {
                     border: msg.role === 'user' ? '1px solid #30363d' : 'none',
                     padding: msg.role === 'user' ? '12px 16px' : '6px 0',
                     borderRadius: msg.role === 'user' ? '16px 4px 16px 16px' : '0',
-                    color: '#c9d1d9', fontSize: 15, lineHeight: 1.6, maxWidth: '85%'
+                    color: '#c9d1d9', fontSize: 15, lineHeight: 1.6, maxWidth: '85%', whiteSpace: 'pre-wrap'
                   }}>
                     {msg.content}
                   </div>
