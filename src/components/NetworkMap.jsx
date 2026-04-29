@@ -90,11 +90,11 @@ const NetworkMap = ({ setAiQuery, setCurrentView }) => {
       });
 
       marker.on('click', () => {
-        setAiQuery(`Analyze why tower ${tower.nodeId} (${tower.name || ''}, ${tower.region || ''}) is currently in ${status.toUpperCase()} status based on historical data.`);
+        setAiQuery(`Analyze why tower ${tower.nodeId} (${tower.name || ''}, ${tower.region || ''}) is currently in ${status.toUpperCase()} status. Please focus on historical data and metrics from the last ${timeRange}.`);
         setCurrentView('AIChat');
       });
     });
-  }, [towers]);
+  }, [towers, timeRange]);
 
   useEffect(() => {
     // Leaflet must be loaded globally from CDN in index.html
