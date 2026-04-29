@@ -38,6 +38,7 @@ const Users = ({ user }) => {
   const [search, setSearch]     = useState('');
   const [editingId, setEditingId] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
   const [modalData, setModalData] = useState({ fullName: '', email: '', role: 'Viewer' });
 
   useEffect(() => {
@@ -70,15 +71,18 @@ const Users = ({ user }) => {
     }
   };
 
-  const deleteUser = async (id) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        await userService.deleteUser(id);
-        setUsers(u => u.filter(x => x.id !== id));
-      } catch (err) {
-        alert('Failed to delete user: ' + err.message);
-      }
+  const confirmDelete = async () => {
+    try {
+      await userService.deleteUser(deleteId);
+      setUsers(u => u.filter(x => x.id !== deleteId));
+      setDeleteId(null);
+    } catch (err) {
+      alert('Failed to delete user: ' + err.message);
     }
+  };
+
+  const deleteUser = (id) => {
+    setDeleteId(id);
   };
 
   const handleSave = async () => {
@@ -288,66 +292,140 @@ const Users = ({ user }) => {
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 100, backdropFilter: 'blur(4px)'
+          zIndex: 100, backdropFilter: 'blur(8px)'
         }}>
           <div style={{
-            background: '#161b22', border: '1px solid #30363d', borderRadius: 20,
-            width: '100%', maxWidth: 450, padding: '2rem', boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+            background: '#161b22', border: '1px solid #30363d', borderRadius: 24,
+            width: '100%', maxWidth: 480, padding: '2.5rem', boxShadow: '0 20px 60px rgba(0,0,0,0.7)',
+            position: 'relative'
           }}>
-            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: '1.5rem' }}>
+            <button 
+              onClick={() => setShowModal(false)}
+              style={{ position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', color: '#8b949e', cursor: 'pointer', fontSize: 24 }}
+            >
+              ×
+            </button>
+            <h3 style={{ fontSize: 24, fontWeight: 800, marginBottom: '0.5rem' }}>
               {editingId ? 'Edit User' : 'Add New User'}
             </h3>
+            <p style={{ color: '#8b949e', fontSize: 14, marginBottom: '2rem' }}>
+              {editingId ? 'Modify user details and system permissions.' : 'Grant system access to a new team member.'}
+            </p>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase' }}>Full Name</label>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Name</label>
                 <input 
                   type="text" 
                   value={modalData.fullName}
                   onChange={e => setModalData({...modalData, fullName: e.target.value})}
                   placeholder="e.g. John Doe"
-                  style={{ width: '100%', boxSizing: 'border-box', background: '#0d1117', border: '1px solid #30363d', borderRadius: 10, padding: '0.75rem 1rem', color: '#fff', outline: 'none' }}
+                  style={{ width: '100%', boxSizing: 'border-box', background: '#0d1117', border: '1px solid #30363d', borderRadius: 12, padding: '1rem', color: '#fff', outline: 'none', fontSize: 15 }}
+                  onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                  onBlur={e => e.target.style.borderColor = '#30363d'}
                 />
               </div>
               
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase' }}>Email Address</label>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Address</label>
                 <input 
                   type="email" 
                   value={modalData.email}
                   onChange={e => setModalData({...modalData, email: e.target.value})}
                   placeholder="name@noc.com"
-                  style={{ width: '100%', boxSizing: 'border-box', background: '#0d1117', border: '1px solid #30363d', borderRadius: 10, padding: '0.75rem 1rem', color: '#fff', outline: 'none' }}
+                  style={{ width: '100%', boxSizing: 'border-box', background: '#0d1117', border: '1px solid #30363d', borderRadius: 12, padding: '1rem', color: '#fff', outline: 'none', fontSize: 15 }}
+                  onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                  onBlur={e => e.target.style.borderColor = '#30363d'}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase' }}>System Role</label>
-                <select 
-                  value={modalData.role}
-                  onChange={e => setModalData({...modalData, role: e.target.value})}
-                  style={{ width: '100%', boxSizing: 'border-box', background: '#0d1117', border: '1px solid #30363d', borderRadius: 10, padding: '0.75rem 1rem', color: '#fff', outline: 'none' }}
-                >
-                  <option value="Admin">Admin</option>
-                  <option value="Operator">Operator</option>
-                  <option value="Viewer">Viewer</option>
-                </select>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#8b949e', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>System Role</label>
+                <div style={{ position: 'relative' }}>
+                  <select 
+                    value={modalData.role}
+                    onChange={e => setModalData({...modalData, role: e.target.value})}
+                    style={{ 
+                      width: '100%', boxSizing: 'border-box', background: '#0d1117', 
+                      border: '1px solid #30363d', borderRadius: 12, padding: '1rem', 
+                      color: '#fff', outline: 'none', appearance: 'none', cursor: 'pointer',
+                      fontSize: 15
+                    }}
+                    onFocus={e => e.target.style.borderColor = '#3b82f6'}
+                    onBlur={e => e.target.style.borderColor = '#30363d'}
+                  >
+                    <option value="Admin">Admin (Full Access)</option>
+                    <option value="Operator">Operator (Standard)</option>
+                    <option value="Viewer">Viewer (Read-only)</option>
+                  </select>
+                  <div style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#8b949e' }}>▼</div>
+                </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 12, marginTop: '1rem' }}>
+              <div style={{ display: 'flex', gap: 16, marginTop: '1.5rem' }}>
                 <button 
                   onClick={() => setShowModal(false)}
-                  style={{ flex: 1, padding: '0.75rem', background: 'transparent', border: '1px solid #30363d', borderRadius: 10, color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ flex: 1, padding: '1rem', background: 'transparent', border: '1px solid #30363d', borderRadius: 12, color: '#fff', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#1c2128'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleSave}
-                  style={{ flex: 1, padding: '0.75rem', background: '#3b82f6', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ 
+                    flex: 1, padding: '1rem', background: '#3b82f6', border: 'none', borderRadius: 12, 
+                    color: '#fff', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+                    boxShadow: '0 4px 12px rgba(59,130,246,0.3)'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#2563eb'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#3b82f6'}
                 >
                   {editingId ? 'Save Changes' : 'Create User'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteId && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 110, backdropFilter: 'blur(8px)'
+        }}>
+          <div style={{
+            background: '#161b22', border: '1px solid #30363d', borderRadius: 24,
+            width: '100%', maxWidth: 400, padding: '2.5rem', textAlign: 'center',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.7)'
+          }}>
+            <div style={{ 
+              width: 64, height: 64, borderRadius: '50%', background: 'rgba(248,81,73,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem',
+              border: '1px solid rgba(248,81,73,0.3)'
+            }}>
+              <Trash2 size={32} color="#f85149" />
+            </div>
+            <h3 style={{ fontSize: 22, fontWeight: 800, marginBottom: '0.75rem' }}>Delete User</h3>
+            <p style={{ color: '#8b949e', fontSize: 14, lineHeight: 1.6, marginBottom: '2rem' }}>
+              Are you sure you want to delete this user? This action cannot be undone and will revoke all system access.
+            </p>
+            
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button 
+                onClick={() => setDeleteId(null)}
+                style={{ flex: 1, padding: '0.875rem', background: 'transparent', border: '1px solid #30363d', borderRadius: 12, color: '#fff', fontWeight: 600, cursor: 'pointer' }}
+              >
+                No, Keep
+              </button>
+              <button 
+                onClick={confirmDelete}
+                style={{ flex: 1, padding: '0.875rem', background: '#f85149', border: 'none', borderRadius: 12, color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Yes, Delete
+              </button>
             </div>
           </div>
         </div>
