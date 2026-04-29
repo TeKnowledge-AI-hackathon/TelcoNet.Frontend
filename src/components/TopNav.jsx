@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Map, BarChart2, Clock, Users, Bell, Activity } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -17,10 +17,44 @@ const TopNav = ({ currentView, setCurrentView, onLogout, user }) => {
   const [healthStatus, setHealthStatus] = useState('Healthy');
   const [notifications, setNotifications] = useState([]);
 
+  const lastBeepRef = useRef(0);
+
+  const playAlertSound = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'square'; // More attention-grabbing than sine
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.5);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+    } catch (e) {
+      console.warn('Audio alert blocked or failed:', e);
+    }
+  };
+
   const fetchHealthAndAlerts = async () => {
     try {
       const health = await networkService.getHealth();
-      setHealthStatus(health.overallStatus || 'Healthy');
+      const status = health.overallStatus || 'Healthy';
+      setHealthStatus(status);
+
+      // Trigger audio alert every 20 minutes if Critical
+      if (status === 'Critical') {
+        const now = Date.now();
+        const TWENTY_MINUTES = 20 * 60 * 1000;
+        if (now - lastBeepRef.current >= TWENTY_MINUTES) {
+          playAlertSound();
+          lastBeepRef.current = now;
+        }
+      }
 
       const alerts = await networkService.getAlerts();
       const formattedAlerts = alerts.map(a => ({
